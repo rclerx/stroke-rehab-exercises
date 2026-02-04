@@ -91,19 +91,41 @@
     }
   }
 
+  var CHORES_VERSION = 2;
+
+  function defaultChores() {
+    return [
+      // Daily
+      { id: makeId(), text: 'Make bed', done: false, assigned: '', frequency: 'daily' },
+      { id: makeId(), text: 'Dishes', done: false, assigned: '', frequency: 'daily' },
+      { id: makeId(), text: 'Wipe counters', done: false, assigned: '', frequency: 'daily' },
+      // Weekly (from schedule)
+      { id: makeId(), text: 'Kids clothes', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Hot tub', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Sort clothes', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Monarch $', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Plants', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Grocery order', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Underwear', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Bath / Shower', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Litter', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Clean-up', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Pre-cleaning', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Our clothes', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Sheets or towels', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Mow grass', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Leo meds', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Art work', done: false, assigned: '', frequency: 'weekly' },
+      { id: makeId(), text: 'Comb cats', done: false, assigned: '', frequency: 'weekly' }
+    ];
+  }
+
   function defaultData() {
     return {
       lastReset: startOfWeekMonday(new Date()),
       lastDailyReset: todayDateString(),
-      chores: [
-        { id: makeId(), text: 'Make bed', done: false, assigned: '', frequency: 'daily' },
-        { id: makeId(), text: 'Dishes', done: false, assigned: '', frequency: 'daily' },
-        { id: makeId(), text: 'Wipe counters', done: false, assigned: '', frequency: 'daily' },
-        { id: makeId(), text: 'Vacuum', done: false, assigned: '', frequency: 'weekly' },
-        { id: makeId(), text: 'Mop floors', done: false, assigned: '', frequency: 'weekly' },
-        { id: makeId(), text: 'Clean bathrooms', done: false, assigned: '', frequency: 'weekly' },
-        { id: makeId(), text: 'Laundry', done: false, assigned: '', frequency: 'weekly' }
-      ],
+      choresVersion: CHORES_VERSION,
+      chores: defaultChores(),
       todos: []
     };
   }
@@ -164,10 +186,16 @@
     if (!data || typeof data !== 'object') {
       return defaultData();
     }
+    var chores = normalizeChores(data.chores);
+    // Migrate chores if version is outdated
+    if (!data.choresVersion || data.choresVersion < CHORES_VERSION) {
+      chores = defaultChores();
+    }
     return {
       lastReset: data.lastReset || startOfWeekMonday(new Date()),
       lastDailyReset: data.lastDailyReset || todayDateString(),
-      chores: normalizeChores(data.chores),
+      choresVersion: CHORES_VERSION,
+      chores: chores,
       todos: data.todos && data.todos.length ? data.todos : []
     };
   }
@@ -499,6 +527,8 @@
     }
   }
 
+  var activeTab = 'todos';
+
   function bindEvents() {
     if (eventsBound) {
       return;
@@ -508,10 +538,64 @@
     var tabTodos = document.getElementById('tab-todos');
 
     tabChores.onclick = function () {
+      activeTab = 'chores';
       switchTab('chores');
     };
     tabTodos.onclick = function () {
+      activeTab = 'todos';
       switchTab('todos');
+    };
+
+    // Overflow menu
+    var overflowBtn = document.getElementById('overflow-btn');
+    var overflowMenu = document.getElementById('overflow-menu');
+    var deleteCheckedBtn = document.getElementById('delete-checked-btn');
+
+    overflowBtn.onclick = function (e) {
+      e.stopPropagation();
+      if (overflowMenu.style.display === 'block') {
+        overflowMenu.style.display = 'none';
+      } else {
+        overflowMenu.style.display = 'block';
+      }
+    };
+
+    document.addEventListener('click', function () {
+      overflowMenu.style.display = 'none';
+    }, false);
+
+    overflowMenu.onclick = function (e) {
+      e.stopPropagation();
+    };
+
+    deleteCheckedBtn.onclick = function () {
+      if (!currentData) {
+        return;
+      }
+      overflowMenu.style.display = 'none';
+      if (activeTab === 'todos') {
+        var kept = [];
+        var i;
+        for (i = 0; i < currentData.todos.length; i++) {
+          if (!currentData.todos[i].done) {
+            kept.push(currentData.todos[i]);
+          }
+        }
+        currentData.todos = kept;
+        saveData(currentData);
+        renderTodos(currentData);
+      } else {
+        var keptChores = [];
+        var j;
+        for (j = 0; j < currentData.chores.length; j++) {
+          if (!currentData.chores[j].done) {
+            keptChores.push(currentData.chores[j]);
+          }
+        }
+        currentData.chores = keptChores;
+        saveData(currentData);
+        renderChores(currentData);
+      }
     };
 
     var choreInput = document.getElementById('chore-input');
