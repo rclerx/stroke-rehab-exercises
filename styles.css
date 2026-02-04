@@ -33,7 +33,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
   background: var(--accent);
-  padding: 12px 16px;
+  padding: 12px 6px 12px 16px;
   color: white;
 }
 
@@ -69,7 +69,6 @@ html, body {
   cursor: pointer;
   opacity: 1;
   line-height: 1;
-  margin-right: 20px;
 }
 
 .overflow-menu {
