@@ -1,7 +1,6 @@
 'use strict';
 
 var path = require('path');
-var crypto = require('crypto');
 var express = require('express');
 var Database = require('better-sqlite3');
 var dotenv = require('dotenv');
@@ -10,12 +9,33 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 var PORT = process.env.PORT || 3000;
 var DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data.sqlite3');
-var AUTH_USER = process.env.BASIC_AUTH_USER;
-var AUTH_PASS = process.env.BASIC_AUTH_PASS;
 
-if (!AUTH_USER || !AUTH_PASS) {
-  console.error('Missing BASIC_AUTH_USER or BASIC_AUTH_PASS in .env');
-  process.exit(1);
+// Local network prefixes that are allowed to connect
+var LOCAL_PREFIXES = ['127.', '10.', '192.168.', '172.16.', '172.17.', '172.18.',
+  '172.19.', '172.20.', '172.21.', '172.22.', '172.23.', '172.24.',
+  '172.25.', '172.26.', '172.27.', '172.28.', '172.29.', '172.30.', '172.31.',
+  '::1', '::ffff:127.', '::ffff:10.', '::ffff:192.168.'];
+
+function isLocalAddress(addr) {
+  if (!addr) {
+    return false;
+  }
+  var i;
+  for (i = 0; i < LOCAL_PREFIXES.length; i++) {
+    if (addr.indexOf(LOCAL_PREFIXES[i]) === 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function requireLocalNetwork(req, res, next) {
+  var ip = req.ip || req.connection.remoteAddress || '';
+  if (isLocalAddress(ip)) {
+    return next();
+  }
+  console.log('Rejected non-local connection from: ' + ip);
+  return res.status(403).send('Access denied — local network only');
 }
 
 var db = new Database(DB_PATH);
@@ -32,36 +52,6 @@ db.prepare('INSERT OR IGNORE INTO dashboard_data (id, payload) VALUES (1, ?)')
 
 var selectStmt = db.prepare('SELECT payload FROM dashboard_data WHERE id = 1');
 var updateStmt = db.prepare('UPDATE dashboard_data SET payload = ?, updated_at = datetime(\'now\') WHERE id = 1');
-
-function safeEqual(a, b) {
-  var aBuf = Buffer.from(String(a));
-  var bBuf = Buffer.from(String(b));
-  if (aBuf.length !== bBuf.length) {
-    return false;
-  }
-  return crypto.timingSafeEqual(aBuf, bBuf);
-}
-
-function requireAuth(req, res, next) {
-  var header = req.headers.authorization || '';
-  if (header.indexOf('Basic ') !== 0) {
-    res.set('WWW-Authenticate', 'Basic realm="Family Dashboard"');
-    return res.status(401).send('Authentication required');
-  }
-
-  var encoded = header.slice(6);
-  var decoded = Buffer.from(encoded, 'base64').toString('utf8');
-  var sepIndex = decoded.indexOf(':');
-  var user = sepIndex >= 0 ? decoded.slice(0, sepIndex) : decoded;
-  var pass = sepIndex >= 0 ? decoded.slice(sepIndex + 1) : '';
-
-  if (!safeEqual(user, AUTH_USER) || !safeEqual(pass, AUTH_PASS)) {
-    res.set('WWW-Authenticate', 'Basic realm="Family Dashboard"');
-    return res.status(401).send('Authentication required');
-  }
-
-  return next();
-}
 
 function loadData() {
   var row = selectStmt.get();
@@ -128,8 +118,9 @@ function mergeDeep(target, patch) {
 }
 
 var app = express();
+app.set('trust proxy', 'loopback');
 app.use(express.json({ limit: '1mb' }));
-app.use(requireAuth);
+app.use(requireLocalNetwork);
 
 seedInitialTodos();
 
@@ -159,4 +150,5 @@ app.use(express.static(path.join(__dirname, '..')));
 
 app.listen(PORT, function () {
   console.log('Family Dashboard server running on port ' + PORT);
+  console.log('Accepting connections from local network only');
 });

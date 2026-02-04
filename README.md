@@ -24,9 +24,7 @@ A simple, offline-first family dashboard built for a wall-mounted iPad (iOS 12.5
    ```sh
    cp .env.example .env
    ```
-3. Edit `.env` with your credentials:
-   - `BASIC_AUTH_USER` — username for dashboard access
-   - `BASIC_AUTH_PASS` — password for dashboard access
+3. Edit `.env` if needed (defaults work out of the box):
    - `PORT` — server port (default 3000)
    - `DB_PATH` — SQLite database path
 
@@ -35,7 +33,7 @@ A simple, offline-first family dashboard built for a wall-mounted iPad (iOS 12.5
 npm run server
 ```
 
-Open the dashboard in your browser and authenticate when prompted:
+Open the dashboard from any device on your local network:
 ```
 http://localhost:3000
 ```
