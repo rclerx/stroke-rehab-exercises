@@ -60,12 +60,14 @@ html, body {
 .overflow-btn {
   background: transparent;
   border: none;
-  color: white;
-  font-size: 20px;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 600;
   padding: 0 4px;
   cursor: pointer;
-  opacity: 0.9;
+  opacity: 1;
   line-height: 1;
+  margin-right: 8px;
 }
 
 .overflow-menu {
