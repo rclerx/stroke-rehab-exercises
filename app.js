@@ -49,14 +49,15 @@
   function defaultData() {
     return {
       lastReset: startOfWeekMonday(new Date()),
+      lastDailyReset: todayDateString(),
       chores: [
-        { id: makeId(), text: 'Vacuum', done: false, assigned: '' },
-        { id: makeId(), text: 'Mop floors', done: false, assigned: '' },
-        { id: makeId(), text: 'Clean bathrooms', done: false, assigned: '' },
-        { id: makeId(), text: 'Take out trash', done: false, assigned: '' },
-        { id: makeId(), text: 'Grocery shopping', done: false, assigned: '' },
-        { id: makeId(), text: 'Laundry', done: false, assigned: '' },
-        { id: makeId(), text: 'Clean kitchen', done: false, assigned: '' }
+        { id: makeId(), text: 'Make bed', done: false, assigned: '', frequency: 'daily' },
+        { id: makeId(), text: 'Dishes', done: false, assigned: '', frequency: 'daily' },
+        { id: makeId(), text: 'Wipe counters', done: false, assigned: '', frequency: 'daily' },
+        { id: makeId(), text: 'Vacuum', done: false, assigned: '', frequency: 'weekly' },
+        { id: makeId(), text: 'Mop floors', done: false, assigned: '', frequency: 'weekly' },
+        { id: makeId(), text: 'Clean bathrooms', done: false, assigned: '', frequency: 'weekly' },
+        { id: makeId(), text: 'Laundry', done: false, assigned: '', frequency: 'weekly' }
       ],
       todos: []
     };
@@ -71,11 +72,47 @@
     if (data.lastReset !== currentMonday) {
       var i;
       for (i = 0; i < data.chores.length; i++) {
-        data.chores[i].done = false;
+        if (data.chores[i].frequency === 'weekly') {
+          data.chores[i].done = false;
+        }
       }
       data.lastReset = currentMonday;
       saveData(data);
     }
+  }
+
+  function ensureDailyReset(data) {
+    var today = todayDateString();
+    if (!data.lastDailyReset || data.lastDailyReset < today) {
+      var i;
+      for (i = 0; i < data.chores.length; i++) {
+        if (data.chores[i].frequency === 'daily') {
+          data.chores[i].done = false;
+        }
+      }
+      data.lastDailyReset = today;
+      saveData(data);
+    }
+  }
+
+  function normalizeChores(list) {
+    var result = [];
+    var i;
+    if (!list || !list.length) {
+      return result;
+    }
+    for (i = 0; i < list.length; i++) {
+      var item = list[i] || {};
+      var freq = item.frequency === 'daily' ? 'daily' : 'weekly';
+      result.push({
+        id: item.id || makeId(),
+        text: item.text || '',
+        done: !!item.done,
+        assigned: item.assigned || '',
+        frequency: freq
+      });
+    }
+    return result;
   }
 
   function normalizeData(data) {
@@ -84,7 +121,8 @@
     }
     return {
       lastReset: data.lastReset || startOfWeekMonday(new Date()),
-      chores: data.chores && data.chores.length ? data.chores : [],
+      lastDailyReset: data.lastDailyReset || todayDateString(),
+      chores: normalizeChores(data.chores),
       todos: data.todos && data.todos.length ? data.todos : []
     };
   }
@@ -133,9 +171,44 @@
     var list = document.getElementById('chores-list');
     list.innerHTML = '';
     var i;
+    var daily = [];
+    var weekly = [];
     for (i = 0; i < data.chores.length; i++) {
-      list.appendChild(renderChoreItem(data, data.chores[i]));
+      if (data.chores[i].frequency === 'daily') {
+        daily.push(data.chores[i]);
+      } else {
+        weekly.push(data.chores[i]);
+      }
     }
+    list.appendChild(renderChoreSection('Daily', 'Resets every day', data, daily));
+    list.appendChild(renderChoreSection('Weekly', 'Resets every Monday', data, weekly));
+  }
+
+  function renderChoreSection(title, subtitle, data, items) {
+    var section = document.createElement('div');
+    section.className = 'chore-section';
+
+    var header = document.createElement('div');
+    header.className = 'chore-section-head';
+    var headerTitle = document.createElement('div');
+    headerTitle.className = 'chore-section-title';
+    headerTitle.innerHTML = title;
+    var headerSub = document.createElement('div');
+    headerSub.className = 'chore-section-sub';
+    headerSub.innerHTML = subtitle;
+    header.appendChild(headerTitle);
+    header.appendChild(headerSub);
+    section.appendChild(header);
+
+    var list = document.createElement('div');
+    list.className = 'list';
+    var i;
+    for (i = 0; i < items.length; i++) {
+      list.appendChild(renderChoreItem(data, items[i]));
+    }
+    section.appendChild(list);
+
+    return section;
   }
 
   function renderChoreItem(data, item) {
@@ -390,6 +463,7 @@
 
     var choreInput = document.getElementById('chore-input');
     var choreAdd = document.getElementById('chore-add');
+    var choreFrequency = document.getElementById('chore-frequency');
     choreAdd.onclick = function () {
       if (!currentData) {
         return;
@@ -398,7 +472,13 @@
       if (!text) {
         return;
       }
-      currentData.chores.push({ id: makeId(), text: text, done: false, assigned: '' });
+      currentData.chores.push({
+        id: makeId(),
+        text: text,
+        done: false,
+        assigned: '',
+        frequency: choreFrequency.value
+      });
       choreInput.value = '';
       saveData(currentData);
       renderChores(currentData);
@@ -431,7 +511,8 @@
   function init() {
     setCurrentDate();
     loadInitialData(function (data) {
-      currentData = data;
+      currentData = normalizeData(data);
+      ensureDailyReset(currentData);
       ensureWeeklyReset(currentData);
       bindEvents();
       renderChores(currentData);

@@ -106,6 +106,36 @@ html, body {
   flex-direction: column;
 }
 
+.chore-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.chore-section:last-child {
+  border-bottom: none;
+}
+
+.chore-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: #fafafa;
+  border-bottom: 1px solid var(--border);
+}
+
+.chore-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.chore-section-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
 .item {
   display: flex;
   align-items: center;
