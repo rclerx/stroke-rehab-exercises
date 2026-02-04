@@ -15,18 +15,22 @@
 
     <nav class="tabs">
       <button id="tab-todos" class="tab active" type="button">To Do List</button>
-      <button id="tab-chores" class="tab" type="button">Weekly Chores</button>
+      <button id="tab-chores" class="tab" type="button">Chores</button>
     </nav>
 
     <main>
       <section id="view-chores" class="view">
         <div class="section-head">
-          <div class="section-title">This Week</div>
-          <div class="section-sub">Checks reset every Monday</div>
+          <div class="section-title">Chores</div>
+          <div class="section-sub">Daily + weekly lists</div>
         </div>
         <div id="chores-list" class="list"></div>
         <div class="add-row">
           <input id="chore-input" type="text" placeholder="Add a chore" />
+          <select id="chore-frequency">
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+          </select>
           <button id="chore-add" class="primary" type="button">Add</button>
         </div>
       </section>
