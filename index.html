@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Family Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="title">Family Dashboard</div>
+      <div id="current-date" class="date"></div>
+    </header>
+
+    <nav class="tabs">
+      <button id="tab-todos" class="tab active" type="button">To Do List</button>
+      <button id="tab-chores" class="tab" type="button">Weekly Chores</button>
+    </nav>
+
+    <main>
+      <section id="view-chores" class="view">
+        <div class="section-head">
+          <div class="section-title">This Week</div>
+          <div class="section-sub">Checks reset every Monday</div>
+        </div>
+        <div id="chores-list" class="list"></div>
+        <div class="add-row">
+          <input id="chore-input" type="text" placeholder="Add a chore" />
+          <button id="chore-add" class="primary" type="button">Add</button>
+        </div>
+      </section>
+
+      <section id="view-todos" class="view active">
+        <div class="section-head">
+          <div class="section-title">To Do List</div>
+          <div class="section-sub">Organize by category</div>
+        </div>
+        <div id="todos-list" class="list"></div>
+        <div class="add-row">
+          <input id="todo-input" type="text" placeholder="Add a todo" />
+          <select id="todo-category">
+            <option>Home</option>
+            <option>Shopping</option>
+            <option>Projects</option>
+            <option>Other</option>
+          </select>
+          <button id="todo-add" class="primary" type="button">Add</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

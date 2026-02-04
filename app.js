@@ -1,0 +1,448 @@
+(function () {
+  var STORAGE_KEY = 'familyDashboardData';
+  var currentData = null;
+  var eventsBound = false;
+
+  function todayDateString() {
+    var d = new Date();
+    return formatDate(d);
+  }
+
+  function formatDate(date) {
+    var year = date.getFullYear();
+    var month = date.getMonth() + 1;
+    var day = date.getDate();
+    return year + '-' + pad(month) + '-' + pad(day);
+  }
+
+  function pad(num) {
+    return num < 10 ? '0' + num : '' + num;
+  }
+
+  function startOfWeekMonday(date) {
+    var day = date.getDay();
+    var diff = day === 0 ? -6 : 1 - day;
+    var monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() + diff);
+    return formatDate(monday);
+  }
+
+  function loadLocalData() {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return defaultData();
+    }
+    try {
+      var parsed = JSON.parse(raw);
+      if (!parsed.chores || !parsed.todos) {
+        return defaultData();
+      }
+      return parsed;
+    } catch (e) {
+      return defaultData();
+    }
+  }
+
+  function saveData(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function defaultData() {
+    return {
+      lastReset: startOfWeekMonday(new Date()),
+      chores: [
+        { id: makeId(), text: 'Vacuum', done: false, assigned: '' },
+        { id: makeId(), text: 'Mop floors', done: false, assigned: '' },
+        { id: makeId(), text: 'Clean bathrooms', done: false, assigned: '' },
+        { id: makeId(), text: 'Take out trash', done: false, assigned: '' },
+        { id: makeId(), text: 'Grocery shopping', done: false, assigned: '' },
+        { id: makeId(), text: 'Laundry', done: false, assigned: '' },
+        { id: makeId(), text: 'Clean kitchen', done: false, assigned: '' }
+      ],
+      todos: []
+    };
+  }
+
+  function makeId() {
+    return 'id-' + String(new Date().getTime()) + '-' + String(Math.floor(Math.random() * 100000));
+  }
+
+  function ensureWeeklyReset(data) {
+    var currentMonday = startOfWeekMonday(new Date());
+    if (data.lastReset !== currentMonday) {
+      var i;
+      for (i = 0; i < data.chores.length; i++) {
+        data.chores[i].done = false;
+      }
+      data.lastReset = currentMonday;
+      saveData(data);
+    }
+  }
+
+  function normalizeData(data) {
+    if (!data || typeof data !== 'object') {
+      return defaultData();
+    }
+    return {
+      lastReset: data.lastReset || startOfWeekMonday(new Date()),
+      chores: data.chores && data.chores.length ? data.chores : [],
+      todos: data.todos && data.todos.length ? data.todos : []
+    };
+  }
+
+  function loadInitialData(done) {
+    done(loadLocalData());
+  }
+
+  function setCurrentDate() {
+    var el = document.getElementById('current-date');
+    if (!el) {
+      return;
+    }
+    var now = new Date();
+    var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    var dateText;
+    try {
+      dateText = now.toLocaleDateString('en-US', options);
+    } catch (e) {
+      dateText = todayDateString();
+    }
+    el.innerHTML = dateText;
+  }
+
+  function switchTab(tabName) {
+    var tabChores = document.getElementById('tab-chores');
+    var tabTodos = document.getElementById('tab-todos');
+    var viewChores = document.getElementById('view-chores');
+    var viewTodos = document.getElementById('view-todos');
+
+    if (tabName === 'chores') {
+      tabChores.className = 'tab active';
+      tabTodos.className = 'tab';
+      viewChores.className = 'view active';
+      viewTodos.className = 'view';
+    } else {
+      tabChores.className = 'tab';
+      tabTodos.className = 'tab active';
+      viewChores.className = 'view';
+      viewTodos.className = 'view active';
+    }
+  }
+
+  function renderChores(data) {
+    closeAssigneeMenu();
+    var list = document.getElementById('chores-list');
+    list.innerHTML = '';
+    var i;
+    for (i = 0; i < data.chores.length; i++) {
+      list.appendChild(renderChoreItem(data, data.chores[i]));
+    }
+  }
+
+  function renderChoreItem(data, item) {
+    var row = document.createElement('div');
+    row.className = 'item';
+
+    var left = document.createElement('div');
+    left.className = 'item-left';
+
+    var checkboxWrap = document.createElement('label');
+    checkboxWrap.className = 'checkbox-wrap';
+    var checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'checkbox-input';
+    checkbox.checked = item.done;
+    checkbox.onclick = function () {
+      item.done = checkbox.checked;
+      saveData(data);
+    };
+    var checkboxUi = document.createElement('span');
+    checkboxUi.className = 'checkbox-ui';
+    checkboxWrap.appendChild(checkbox);
+    checkboxWrap.appendChild(checkboxUi);
+
+    var textWrap = document.createElement('div');
+    var title = document.createElement('div');
+    title.className = 'item-title';
+    title.innerHTML = item.text;
+    textWrap.appendChild(title);
+
+    left.appendChild(checkboxWrap);
+    left.appendChild(textWrap);
+
+    var right = document.createElement('div');
+    right.className = 'item-right';
+    right.appendChild(renderAssigneeControl(item, function () {
+      saveData(data);
+      renderChores(data);
+    }));
+
+    row.appendChild(left);
+    row.appendChild(right);
+
+    return row;
+  }
+
+  function renderTodos(data) {
+    closeAssigneeMenu();
+    var list = document.getElementById('todos-list');
+    list.innerHTML = '';
+    var categories = ['Home', 'Shopping', 'Projects', 'Other'];
+    var i;
+    for (i = 0; i < categories.length; i++) {
+      var category = categories[i];
+      var group = document.createElement('div');
+      var header = document.createElement('div');
+      header.className = 'category-header';
+      header.innerHTML = category.toUpperCase();
+      group.appendChild(header);
+
+      var j;
+      var hasAny = false;
+      for (j = 0; j < data.todos.length; j++) {
+        if (data.todos[j].category === category) {
+          group.appendChild(renderTodoItem(data, data.todos[j]));
+          hasAny = true;
+        }
+      }
+      if (!hasAny) {
+        var empty = document.createElement('div');
+        empty.className = 'empty-category';
+        empty.innerHTML = '—';
+        group.appendChild(empty);
+      }
+      list.appendChild(group);
+    }
+  }
+
+  function renderTodoItem(data, item) {
+    var row = document.createElement('div');
+    row.className = 'item';
+
+    var left = document.createElement('div');
+    left.className = 'item-left';
+
+    var checkboxWrap = document.createElement('label');
+    checkboxWrap.className = 'checkbox-wrap';
+    var checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'checkbox-input';
+    checkbox.checked = item.done;
+    checkbox.onclick = function () {
+      item.done = checkbox.checked;
+      saveData(data);
+    };
+    var checkboxUi = document.createElement('span');
+    checkboxUi.className = 'checkbox-ui';
+    checkboxWrap.appendChild(checkbox);
+    checkboxWrap.appendChild(checkboxUi);
+
+    var textWrap = document.createElement('div');
+    var title = document.createElement('div');
+    title.className = 'item-title';
+    title.innerHTML = item.text;
+
+    textWrap.appendChild(title);
+
+    left.appendChild(checkboxWrap);
+    left.appendChild(textWrap);
+
+    var right = document.createElement('div');
+    right.className = 'item-right';
+    right.appendChild(renderAssigneeControl(item, function () {
+      saveData(data);
+      renderTodos(data);
+    }));
+
+    row.appendChild(left);
+    row.appendChild(right);
+
+    return row;
+  }
+
+  var assignmentOverlay = null;
+  var openAssigneeMenu = null;
+
+  function ensureAssignmentOverlay() {
+    if (assignmentOverlay) {
+      return assignmentOverlay;
+    }
+    assignmentOverlay = document.createElement('div');
+    assignmentOverlay.className = 'assignment-overlay';
+    assignmentOverlay.style.display = 'none';
+    assignmentOverlay.onclick = function () {
+      closeAssigneeMenu();
+    };
+    document.body.appendChild(assignmentOverlay);
+    return assignmentOverlay;
+  }
+
+  function closeAssigneeMenu() {
+    if (openAssigneeMenu) {
+      openAssigneeMenu.style.display = 'none';
+      openAssigneeMenu = null;
+    }
+    if (assignmentOverlay) {
+      assignmentOverlay.style.display = 'none';
+    }
+  }
+
+  function openAssigneeMenuFor(menu) {
+    if (openAssigneeMenu && openAssigneeMenu !== menu) {
+      openAssigneeMenu.style.display = 'none';
+    }
+    ensureAssignmentOverlay().style.display = 'block';
+    menu.style.display = 'block';
+    openAssigneeMenu = menu;
+  }
+
+  function renderAssigneeControl(item, onChange) {
+    var wrap = document.createElement('div');
+    wrap.className = 'assignee-control';
+
+    var badge = document.createElement('button');
+    badge.className = 'person assignee-badge';
+    if (item.assigned === 'Kirsten') {
+      badge.className += ' kirsten';
+      badge.innerHTML = 'Kirsten';
+    } else if (item.assigned === 'Rob') {
+      badge.className += ' rob';
+      badge.innerHTML = 'Rob';
+    } else {
+      badge.className += ' unassigned';
+      badge.innerHTML = 'Unassigned';
+    }
+
+    var menu = document.createElement('div');
+    menu.className = 'assignee-menu';
+    menu.style.display = 'none';
+
+    var kBtn = document.createElement('button');
+    kBtn.className = 'assignee-option kirsten';
+    kBtn.innerHTML = 'Kirsten';
+    kBtn.onclick = function () {
+      item.assigned = 'Kirsten';
+      closeAssigneeMenu();
+      onChange();
+    };
+
+    var rBtn = document.createElement('button');
+    rBtn.className = 'assignee-option rob';
+    rBtn.innerHTML = 'Rob';
+    rBtn.onclick = function () {
+      item.assigned = 'Rob';
+      closeAssigneeMenu();
+      onChange();
+    };
+
+    menu.appendChild(kBtn);
+    menu.appendChild(rBtn);
+
+    badge.onclick = function () {
+      if (openAssigneeMenu === menu && menu.style.display === 'block') {
+        closeAssigneeMenu();
+        return;
+      }
+      openAssigneeMenuFor(menu);
+    };
+
+    wrap.appendChild(badge);
+    wrap.appendChild(menu);
+
+    if (item.assigned) {
+      var remove = document.createElement('button');
+      remove.className = 'assign-remove';
+      remove.innerHTML = '✕';
+      remove.onclick = function () {
+        item.assigned = '';
+        closeAssigneeMenu();
+        onChange();
+      };
+      wrap.appendChild(remove);
+    }
+
+    return wrap;
+  }
+
+  function removeItem(list, id) {
+    var i;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].id === id) {
+        list.splice(i, 1);
+        return;
+      }
+    }
+  }
+
+  function bindEvents() {
+    if (eventsBound) {
+      return;
+    }
+    eventsBound = true;
+    var tabChores = document.getElementById('tab-chores');
+    var tabTodos = document.getElementById('tab-todos');
+
+    tabChores.onclick = function () {
+      switchTab('chores');
+    };
+    tabTodos.onclick = function () {
+      switchTab('todos');
+    };
+
+    var choreInput = document.getElementById('chore-input');
+    var choreAdd = document.getElementById('chore-add');
+    choreAdd.onclick = function () {
+      if (!currentData) {
+        return;
+      }
+      var text = choreInput.value.replace(/^\s+|\s+$/g, '');
+      if (!text) {
+        return;
+      }
+      currentData.chores.push({ id: makeId(), text: text, done: false, assigned: '' });
+      choreInput.value = '';
+      saveData(currentData);
+      renderChores(currentData);
+    };
+
+    var todoInput = document.getElementById('todo-input');
+    var todoAdd = document.getElementById('todo-add');
+    var todoCategory = document.getElementById('todo-category');
+    todoAdd.onclick = function () {
+      if (!currentData) {
+        return;
+      }
+      var text = todoInput.value.replace(/^\s+|\s+$/g, '');
+      if (!text) {
+        return;
+      }
+      currentData.todos.push({
+        id: makeId(),
+        text: text,
+        done: false,
+        assigned: '',
+        category: todoCategory.value
+      });
+      todoInput.value = '';
+      saveData(currentData);
+      renderTodos(currentData);
+    };
+  }
+
+  function init() {
+    setCurrentDate();
+    loadInitialData(function (data) {
+      currentData = data;
+      ensureWeeklyReset(currentData);
+      bindEvents();
+      renderChores(currentData);
+      renderTodos(currentData);
+      switchTab('todos');
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
