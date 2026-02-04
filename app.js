@@ -140,7 +140,7 @@
 
   function renderChoreItem(data, item) {
     var row = document.createElement('div');
-    row.className = 'item';
+    row.className = item.done ? 'item is-done' : 'item';
 
     var left = document.createElement('div');
     left.className = 'item-left';
@@ -153,6 +153,7 @@
     checkbox.checked = item.done;
     checkbox.onclick = function () {
       item.done = checkbox.checked;
+      row.className = item.done ? 'item is-done' : 'item';
       saveData(data);
     };
     var checkboxUi = document.createElement('span');
@@ -216,7 +217,7 @@
 
   function renderTodoItem(data, item) {
     var row = document.createElement('div');
-    row.className = 'item';
+    row.className = item.done ? 'item is-done' : 'item';
 
     var left = document.createElement('div');
     left.className = 'item-left';
@@ -229,6 +230,7 @@
     checkbox.checked = item.done;
     checkbox.onclick = function () {
       item.done = checkbox.checked;
+      row.className = item.done ? 'item is-done' : 'item';
       saveData(data);
     };
     var checkboxUi = document.createElement('span');
