@@ -563,6 +563,17 @@
     document.addEventListener('click', function () {
       overflowMenu.style.display = 'none';
     }, false);
+    document.addEventListener("touchstart", function (e) {
+      var wrap = document.getElementById("overflow-btn").parentNode;
+      var target = e.target;
+      while (target) {
+        if (target === wrap) {
+          return;
+        }
+        target = target.parentNode;
+      }
+      overflowMenu.style.display = "none";
+    }, false);
 
     overflowMenu.onclick = function (e) {
       e.stopPropagation();
