@@ -2,6 +2,7 @@
   var STORAGE_KEY = 'familyDashboardData';
   var currentData = null;
   var eventsBound = false;
+  var apiEnabled = false;
 
   function todayDateString() {
     var d = new Date();
@@ -42,8 +43,52 @@
     }
   }
 
+  function apiRequest(method, path, payload, done, fail) {
+    var xhr = new XMLHttpRequest();
+    xhr.open(method, path, true);
+    xhr.timeout = 3000;
+    xhr.setRequestHeader('Accept', 'application/json');
+    if (payload) {
+      xhr.setRequestHeader('Content-Type', 'application/json');
+    }
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) {
+        return;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        if (!xhr.responseText) {
+          done({});
+          return;
+        }
+        try {
+          done(JSON.parse(xhr.responseText));
+        } catch (e) {
+          done({});
+        }
+      } else {
+        fail(xhr);
+      }
+    };
+    xhr.onerror = function () {
+      fail(xhr);
+    };
+    xhr.ontimeout = function () {
+      fail(xhr);
+    };
+    try {
+      xhr.send(payload ? JSON.stringify(payload) : null);
+    } catch (e) {
+      fail(xhr);
+    }
+  }
+
   function saveData(data) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (apiEnabled) {
+      apiRequest('POST', '/api/data', data, function () {}, function () {
+        apiEnabled = false;
+      });
+    }
   }
 
   function defaultData() {
@@ -128,7 +173,13 @@
   }
 
   function loadInitialData(done) {
-    done(loadLocalData());
+    apiRequest('GET', '/api/data', null, function (data) {
+      apiEnabled = true;
+      done(data);
+    }, function () {
+      apiEnabled = false;
+      done(loadLocalData());
+    });
   }
 
   function setCurrentDate() {
@@ -260,7 +311,7 @@
     closeAssigneeMenu();
     var list = document.getElementById('todos-list');
     list.innerHTML = '';
-    var categories = ['Home', 'Shopping', 'Projects', 'Other'];
+    var categories = ['Home', 'Shopping', 'Projects', 'Rob', 'Other'];
     var i;
     for (i = 0; i < categories.length; i++) {
       var category = categories[i];

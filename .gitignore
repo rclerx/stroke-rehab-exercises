@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+
+# Database
+server/data.sqlite3
+server/data.sqlite3-shm
+server/data.sqlite3-wal
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
