@@ -403,12 +403,6 @@
       saveData(data);
       renderChores(data);
     }));
-    if (item.frequency === 'weekly') {
-      right.appendChild(renderDayControl(item, function () {
-        saveData(data);
-        renderChores(data);
-      }));
-    }
 
     row.appendChild(left);
     row.appendChild(right);

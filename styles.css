@@ -446,42 +446,42 @@ html, body {
 
 .day-monday {
   border-left-color: #4f83cc;
-  background: rgba(79, 131, 204, 0.04);
+  background: rgba(79, 131, 204, 0.12);
 }
 
 .day-tuesday {
   border-left-color: #6aa84f;
-  background: rgba(106, 168, 79, 0.04);
+  background: rgba(106, 168, 79, 0.12);
 }
 
 .day-wednesday {
   border-left-color: #f6b26b;
-  background: rgba(246, 178, 107, 0.05);
+  background: rgba(246, 178, 107, 0.12);
 }
 
 .day-thursday {
   border-left-color: #8e7cc3;
-  background: rgba(142, 124, 195, 0.05);
+  background: rgba(142, 124, 195, 0.12);
 }
 
 .day-friday {
   border-left-color: #e06666;
-  background: rgba(224, 102, 102, 0.05);
+  background: rgba(224, 102, 102, 0.12);
 }
 
 .day-saturday {
   border-left-color: #76a5af;
-  background: rgba(118, 165, 175, 0.05);
+  background: rgba(118, 165, 175, 0.12);
 }
 
 .day-sunday {
   border-left-color: #ffd966;
-  background: rgba(255, 217, 102, 0.08);
+  background: rgba(255, 217, 102, 0.15);
 }
 
 .day-unscheduled {
   border-left-color: #c9c9c9;
-  background: rgba(201, 201, 201, 0.05);
+  background: rgba(201, 201, 201, 0.12);
 }
 
 .assignee-badge {
