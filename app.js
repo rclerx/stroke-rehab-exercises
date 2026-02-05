@@ -794,6 +794,7 @@
       ghost: ghost,
       placeholder: placeholder,
       container: container,
+      currentContainer: container,
       type: row.getAttribute('data-type'),
       category: row.getAttribute('data-category'),
       frequency: row.getAttribute('data-frequency'),
@@ -815,14 +816,43 @@
       return;
     }
     var container = closestWithClass(target, 'drag-container');
-    if (!container || container !== dragState.container) {
+    if (!container) {
       return;
+    }
+    var allowedContainer = false;
+    if (dragState.type === 'todo') {
+      allowedContainer = container === dragState.container;
+    } else if (dragState.type === 'chore') {
+      var containerFrequency = container.getAttribute('data-frequency') || '';
+      if (dragState.frequency === 'weekly') {
+        allowedContainer = containerFrequency === 'weekly';
+      } else {
+        allowedContainer = container === dragState.container;
+      }
+    }
+    if (!allowedContainer) {
+      return;
+    }
+    if (!dragState.currentContainer) {
+      dragState.currentContainer = dragState.container;
+    }
+    if (container !== dragState.currentContainer) {
+      dragState.currentContainer = container;
     }
     var targetItem = closestWithClass(target, 'item');
-    if (!targetItem || targetItem === dragState.row) {
-      return;
-    }
-    if (targetItem.parentNode !== container) {
+    if (!targetItem || targetItem === dragState.row || targetItem.parentNode !== container) {
+      var empty = null;
+      if (container.getElementsByClassName) {
+        var emptyNodes = container.getElementsByClassName('empty-category');
+        if (emptyNodes && emptyNodes.length) {
+          empty = emptyNodes[0];
+        }
+      }
+      if (empty) {
+        container.insertBefore(dragState.placeholder, empty);
+      } else {
+        container.appendChild(dragState.placeholder);
+      }
       return;
     }
     var rect = targetItem.getBoundingClientRect();
@@ -842,9 +872,9 @@
       dragState = null;
       return;
     }
-    var container = dragState.container;
+    var container = dragState.currentContainer || dragState.container;
     if (dragState.placeholder.parentNode) {
-      container.insertBefore(dragState.row, dragState.placeholder);
+      dragState.placeholder.parentNode.insertBefore(dragState.row, dragState.placeholder);
       dragState.placeholder.parentNode.removeChild(dragState.placeholder);
     }
     if (dragState.ghost && dragState.ghost.parentNode) {
@@ -858,7 +888,18 @@
       saveData(currentData);
       renderTodos(currentData);
     } else if (dragState.type === 'chore') {
-      reorderChoresInGroup(currentData, dragState.frequency, dragState.day, orderedIds);
+      var newDay = dragState.day;
+      if (dragState.frequency === 'weekly' && dragState.currentContainer && dragState.currentContainer !== dragState.container) {
+        newDay = dragState.currentContainer.getAttribute('data-day') || '';
+        var i;
+        for (i = 0; i < currentData.chores.length; i++) {
+          if (currentData.chores[i].id == dragState.row.getAttribute('data-id')) {
+            currentData.chores[i].scheduledDay = newDay;
+            break;
+          }
+        }
+      }
+      reorderChoresInGroup(currentData, dragState.frequency, newDay, orderedIds);
       saveData(currentData);
       renderChores(currentData);
     }
