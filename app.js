@@ -367,11 +367,6 @@
     var left = document.createElement('div');
     left.className = 'item-left';
 
-    var dragHandle = document.createElement('span');
-    dragHandle.className = 'drag-handle';
-    dragHandle.innerHTML = '≡';
-    left.appendChild(dragHandle);
-
     var checkboxWrap = document.createElement('label');
     checkboxWrap.className = 'checkbox-wrap';
     var checkbox = document.createElement('input');
@@ -403,6 +398,11 @@
       saveData(data);
       renderChores(data);
     }));
+
+    var dragHandle = document.createElement('span');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '≡';
+    right.appendChild(dragHandle);
 
     row.appendChild(left);
     row.appendChild(right);
@@ -458,11 +458,6 @@
     var left = document.createElement('div');
     left.className = 'item-left';
 
-    var dragHandle = document.createElement('span');
-    dragHandle.className = 'drag-handle';
-    dragHandle.innerHTML = '≡';
-    left.appendChild(dragHandle);
-
     var checkboxWrap = document.createElement('label');
     checkboxWrap.className = 'checkbox-wrap';
     var checkbox = document.createElement('input');
@@ -495,6 +490,11 @@
       saveData(data);
       renderTodos(data);
     }));
+
+    var dragHandle = document.createElement('span');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '≡';
+    right.appendChild(dragHandle);
 
     row.appendChild(left);
     row.appendChild(right);
@@ -1035,6 +1035,8 @@
         if (dx > 6 || dy > 6) {
           clearTimeout(dragPressTimer);
           dragState = null;
+        } else {
+          e.preventDefault();
         }
         return;
       }
@@ -1042,7 +1044,7 @@
         e.preventDefault();
         updateDragPosition(e.touches[0]);
       }
-    }, false);
+    }, { passive: false });
 
     document.addEventListener('touchend', function () {
       if (dragState && dragState.pending) {

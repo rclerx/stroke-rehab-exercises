@@ -260,12 +260,18 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 18px;
-  font-size: 16px;
+  width: 28px;
+  height: 28px;
+  font-size: 22px;
   color: #b0b0b0;
   opacity: 0.75;
   user-select: none;
+  -webkit-user-select: none;
+  margin-left: 6px;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  -ms-touch-action: none;
 }
 
 .drag-handle:active {
