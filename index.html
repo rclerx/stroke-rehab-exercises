@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Dashboard" />
   <link rel="apple-touch-icon" href="icon.png" />
   <title>Family Dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=12" />
+  <link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
   <div class="app">
@@ -30,6 +30,14 @@
           </svg>
         </span>
         <span class="sidebar-label">Chores</span>
+      </button>
+      <button id="tab-kidchores" class="sidebar-item kid-tab" type="button">
+        <span class="sidebar-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.7-5.2-2.7-5.2 2.7 1-5.7-4.2-4.1 5.8-.8z" fill="currentColor"></path>
+          </svg>
+        </span>
+        <span class="sidebar-label">Kid Chores</span>
       </button>
     </nav>
 
@@ -64,6 +72,49 @@
         </div>
       </section>
 
+      <section id="view-kidchores" class="view">
+        <div class="section-head">
+          <div class="section-title">Kid Chores</div>
+          <div class="section-sub">Kayden &amp; Oliver</div>
+        </div>
+        <div class="kid-content">
+          <div class="kid-section" data-kid="kayden">
+            <div class="kid-head">
+              <div class="kid-name">Kayden</div>
+              <span class="kid-badge kayden">Kayden</span>
+            </div>
+            <div class="kid-progress">
+              <div class="kid-progress-track">
+                <div id="kid-progress-bar-kayden" class="kid-progress-bar kayden"></div>
+              </div>
+              <div id="kid-progress-text-kayden" class="kid-progress-text"></div>
+            </div>
+            <div id="kid-list-kayden" class="list"></div>
+          </div>
+          <div class="kid-section" data-kid="oliver">
+            <div class="kid-head">
+              <div class="kid-name">Oliver</div>
+              <span class="kid-badge oliver">Oliver</span>
+            </div>
+            <div class="kid-progress">
+              <div class="kid-progress-track">
+                <div id="kid-progress-bar-oliver" class="kid-progress-bar oliver"></div>
+              </div>
+              <div id="kid-progress-text-oliver" class="kid-progress-text"></div>
+            </div>
+            <div id="kid-list-oliver" class="list"></div>
+          </div>
+        </div>
+        <div class="add-row kid-add-row">
+          <input id="kid-chore-input" type="text" placeholder="Add a kid chore" />
+          <select id="kid-chore-kid">
+            <option value="kayden">Kayden</option>
+            <option value="oliver">Oliver</option>
+          </select>
+          <button id="kid-chore-add" class="primary" type="button">Add</button>
+        </div>
+      </section>
+
       <section id="view-todos" class="view active">
         <div class="section-head">
           <div class="section-title">To Do List</div>
@@ -86,6 +137,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
