@@ -256,6 +256,28 @@ html, body {
   flex: 1;
 }
 
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 22px;
+  color: #b0b0b0;
+  opacity: 0.75;
+  user-select: none;
+  -webkit-user-select: none;
+  margin-left: 6px;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  -ms-touch-action: none;
+}
+
+.drag-handle:active {
+  opacity: 1;
+}
+
 .checkbox-wrap {
   position: relative;
   width: 18px;
@@ -358,6 +380,114 @@ html, body {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.day-control {
+  position: relative;
+}
+
+.day-badge {
+  border: none;
+  cursor: pointer;
+  line-height: 1.2;
+  letter-spacing: 0.3px;
+}
+
+.day-badge.day-assigned {
+  background: rgba(0, 122, 255, 0.12);
+  color: var(--accent);
+}
+
+.day-badge.day-unassigned {
+  background: #f3f3f3;
+  color: #aaa;
+}
+
+.day-menu {
+  min-width: 140px;
+}
+
+.day-option {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+}
+
+.day-option.clear {
+  color: #999;
+}
+
+.dragging-hidden {
+  visibility: hidden;
+}
+
+.drag-ghost {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+  opacity: 0.9;
+  transform: scale(1.02);
+  pointer-events: none;
+}
+
+.drag-placeholder {
+  border: 1px dashed #cfd8dc;
+  border-radius: 8px;
+  margin: 4px 18px;
+  background: rgba(0, 122, 255, 0.05);
+}
+
+.chore-day-group {
+  border-left: 3px solid #d6d6d6;
+  background: #fcfcfc;
+}
+
+.chore-day-head {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.6px;
+  padding: 8px 18px 6px 18px;
+  text-transform: uppercase;
+}
+
+.day-monday {
+  border-left-color: #4f83cc;
+  background: rgba(79, 131, 204, 0.12);
+}
+
+.day-tuesday {
+  border-left-color: #6aa84f;
+  background: rgba(106, 168, 79, 0.12);
+}
+
+.day-wednesday {
+  border-left-color: #f6b26b;
+  background: rgba(246, 178, 107, 0.12);
+}
+
+.day-thursday {
+  border-left-color: #8e7cc3;
+  background: rgba(142, 124, 195, 0.12);
+}
+
+.day-friday {
+  border-left-color: #e06666;
+  background: rgba(224, 102, 102, 0.12);
+}
+
+.day-saturday {
+  border-left-color: #76a5af;
+  background: rgba(118, 165, 175, 0.12);
+}
+
+.day-sunday {
+  border-left-color: #ffd966;
+  background: rgba(255, 217, 102, 0.15);
+}
+
+.day-unscheduled {
+  border-left-color: #c9c9c9;
+  background: rgba(201, 201, 201, 0.12);
 }
 
 .assignee-badge {

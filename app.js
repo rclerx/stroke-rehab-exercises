@@ -91,32 +91,32 @@
     }
   }
 
-  var CHORES_VERSION = 2;
+  var CHORES_VERSION = 3;
 
   function defaultChores() {
     return [
       // Daily
-      { id: makeId(), text: 'Make bed', done: false, assigned: '', frequency: 'daily' },
-      { id: makeId(), text: 'Dishes', done: false, assigned: '', frequency: 'daily' },
-      { id: makeId(), text: 'Wipe counters', done: false, assigned: '', frequency: 'daily' },
+      { id: makeId(), text: 'Make bed', done: false, assigned: '', frequency: 'daily', scheduledDay: '' },
+      { id: makeId(), text: 'Dishes', done: false, assigned: '', frequency: 'daily', scheduledDay: '' },
+      { id: makeId(), text: 'Wipe counters', done: false, assigned: '', frequency: 'daily', scheduledDay: '' },
       // Weekly (from schedule)
-      { id: makeId(), text: 'Kids clothes', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Hot tub', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Sort clothes', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Monarch $', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Plants', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Grocery order', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Underwear', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Bath / Shower', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Litter', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Clean-up', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Pre-cleaning', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Our clothes', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Sheets or towels', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Mow grass', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Leo meds', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Art work', done: false, assigned: '', frequency: 'weekly' },
-      { id: makeId(), text: 'Comb cats', done: false, assigned: '', frequency: 'weekly' }
+      { id: makeId(), text: 'Kids clothes', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Monday' },
+      { id: makeId(), text: 'Hot tub', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Monday' },
+      { id: makeId(), text: 'Sort clothes', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Tuesday' },
+      { id: makeId(), text: 'Monarch $', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Tuesday' },
+      { id: makeId(), text: 'Plants', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Wednesday' },
+      { id: makeId(), text: 'Grocery order', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Wednesday' },
+      { id: makeId(), text: 'Underwear', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Thursday' },
+      { id: makeId(), text: 'Bath / Shower', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Thursday' },
+      { id: makeId(), text: 'Litter', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Friday' },
+      { id: makeId(), text: 'Clean-up', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Friday' },
+      { id: makeId(), text: 'Pre-cleaning', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Saturday' },
+      { id: makeId(), text: 'Our clothes', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Saturday' },
+      { id: makeId(), text: 'Sheets or towels', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Sunday' },
+      { id: makeId(), text: 'Mow grass', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Sunday' },
+      { id: makeId(), text: 'Leo meds', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Sunday' },
+      { id: makeId(), text: 'Art work', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Sunday' },
+      { id: makeId(), text: 'Comb cats', done: false, assigned: '', frequency: 'weekly', scheduledDay: 'Sunday' }
     ];
   }
 
@@ -176,7 +176,8 @@
         text: item.text || '',
         done: !!item.done,
         assigned: item.assigned || '',
-        frequency: freq
+        frequency: freq,
+        scheduledDay: item.scheduledDay || ''
       });
     }
     return result;
@@ -246,7 +247,7 @@
   }
 
   function renderChores(data) {
-    closeAssigneeMenu();
+    closeMenus();
     var list = document.getElementById('chores-list');
     list.innerHTML = '';
     var i;
@@ -259,11 +260,11 @@
         weekly.push(data.chores[i]);
       }
     }
-    list.appendChild(renderChoreSection('Daily', 'Resets every day', data, daily));
-    list.appendChild(renderChoreSection('Weekly', 'Resets every Monday', data, weekly));
+    list.appendChild(renderChoreSection('Daily', 'Resets every day', data, daily, 'daily'));
+    list.appendChild(renderWeeklyChoreSection('Weekly', 'Resets every Monday', data, weekly));
   }
 
-  function renderChoreSection(title, subtitle, data, items) {
+  function renderChoreSection(title, subtitle, data, items, frequency) {
     var section = document.createElement('div');
     section.className = 'chore-section';
 
@@ -280,7 +281,8 @@
     section.appendChild(header);
 
     var list = document.createElement('div');
-    list.className = 'list';
+    list.className = 'list drag-container';
+    list.setAttribute('data-frequency', frequency || '');
     var i;
     for (i = 0; i < items.length; i++) {
       list.appendChild(renderChoreItem(data, items[i]));
@@ -290,9 +292,77 @@
     return section;
   }
 
+  function renderWeeklyChoreSection(title, subtitle, data, items) {
+    var section = document.createElement('div');
+    section.className = 'chore-section';
+
+    var header = document.createElement('div');
+    header.className = 'chore-section-head';
+    var headerTitle = document.createElement('div');
+    headerTitle.className = 'chore-section-title';
+    headerTitle.innerHTML = title;
+    var headerSub = document.createElement('div');
+    headerSub.className = 'chore-section-sub';
+    headerSub.innerHTML = subtitle;
+    header.appendChild(headerTitle);
+    header.appendChild(headerSub);
+    section.appendChild(header);
+
+    var dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', ''];
+    var dayLabels = {
+      Monday: 'MONDAY',
+      Tuesday: 'TUESDAY',
+      Wednesday: 'WEDNESDAY',
+      Thursday: 'THURSDAY',
+      Friday: 'FRIDAY',
+      Saturday: 'SATURDAY',
+      Sunday: 'SUNDAY',
+      '': 'UNSCHEDULED'
+    };
+
+    var d;
+    for (d = 0; d < dayOrder.length; d++) {
+      var dayKey = dayOrder[d];
+      var group = document.createElement('div');
+      group.className = 'chore-day-group day-' + (dayKey ? dayKey.toLowerCase() : 'unscheduled');
+
+      var groupHeader = document.createElement('div');
+      groupHeader.className = 'chore-day-head';
+      groupHeader.innerHTML = dayLabels[dayKey];
+      group.appendChild(groupHeader);
+
+      var list = document.createElement('div');
+      list.className = 'list drag-container';
+      list.setAttribute('data-frequency', 'weekly');
+      list.setAttribute('data-day', dayKey);
+      var i;
+      var hasAny = false;
+      for (i = 0; i < items.length; i++) {
+        if ((items[i].scheduledDay || '') === dayKey) {
+          list.appendChild(renderChoreItem(data, items[i]));
+          hasAny = true;
+        }
+      }
+      if (!hasAny) {
+        var empty = document.createElement('div');
+        empty.className = 'empty-category';
+        empty.innerHTML = '—';
+        list.appendChild(empty);
+      }
+      group.appendChild(list);
+      section.appendChild(group);
+    }
+
+    return section;
+  }
+
   function renderChoreItem(data, item) {
     var row = document.createElement('div');
     row.className = item.done ? 'item is-done' : 'item';
+    row.setAttribute('data-id', item.id);
+    row.setAttribute('data-type', 'chore');
+    row.setAttribute('data-frequency', item.frequency);
+    row.setAttribute('data-day', item.scheduledDay || '');
 
     var left = document.createElement('div');
     left.className = 'item-left';
@@ -329,6 +399,11 @@
       renderChores(data);
     }));
 
+    var dragHandle = document.createElement('span');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '≡';
+    right.appendChild(dragHandle);
+
     row.appendChild(left);
     row.appendChild(right);
 
@@ -336,7 +411,7 @@
   }
 
   function renderTodos(data) {
-    closeAssigneeMenu();
+    closeMenus();
     var list = document.getElementById('todos-list');
     list.innerHTML = '';
     var categories = ['Home', 'Shopping', 'Projects', 'Rob', 'Other'];
@@ -344,6 +419,8 @@
     for (i = 0; i < categories.length; i++) {
       var category = categories[i];
       var group = document.createElement('div');
+      group.className = 'todo-group';
+      group.setAttribute('data-category', category);
       var header = document.createElement('div');
       header.className = 'category-header';
       header.innerHTML = category.toUpperCase();
@@ -351,9 +428,12 @@
 
       var j;
       var hasAny = false;
+      var listWrap = document.createElement('div');
+      listWrap.className = 'list drag-container';
+      listWrap.setAttribute('data-category', category);
       for (j = 0; j < data.todos.length; j++) {
         if (data.todos[j].category === category) {
-          group.appendChild(renderTodoItem(data, data.todos[j]));
+          listWrap.appendChild(renderTodoItem(data, data.todos[j]));
           hasAny = true;
         }
       }
@@ -361,8 +441,9 @@
         var empty = document.createElement('div');
         empty.className = 'empty-category';
         empty.innerHTML = '—';
-        group.appendChild(empty);
+        listWrap.appendChild(empty);
       }
+      group.appendChild(listWrap);
       list.appendChild(group);
     }
   }
@@ -370,6 +451,9 @@
   function renderTodoItem(data, item) {
     var row = document.createElement('div');
     row.className = item.done ? 'item is-done' : 'item';
+    row.setAttribute('data-id', item.id);
+    row.setAttribute('data-type', 'todo');
+    row.setAttribute('data-category', item.category);
 
     var left = document.createElement('div');
     left.className = 'item-left';
@@ -407,46 +491,63 @@
       renderTodos(data);
     }));
 
+    var dragHandle = document.createElement('span');
+    dragHandle.className = 'drag-handle';
+    dragHandle.innerHTML = '≡';
+    right.appendChild(dragHandle);
+
     row.appendChild(left);
     row.appendChild(right);
 
     return row;
   }
 
-  var assignmentOverlay = null;
+  var menuOverlay = null;
   var openAssigneeMenu = null;
+  var openDayMenu = null;
 
-  function ensureAssignmentOverlay() {
-    if (assignmentOverlay) {
-      return assignmentOverlay;
+  function ensureMenuOverlay() {
+    if (menuOverlay) {
+      return menuOverlay;
     }
-    assignmentOverlay = document.createElement('div');
-    assignmentOverlay.className = 'assignment-overlay';
-    assignmentOverlay.style.display = 'none';
-    assignmentOverlay.onclick = function () {
-      closeAssigneeMenu();
+    menuOverlay = document.createElement('div');
+    menuOverlay.className = 'assignment-overlay';
+    menuOverlay.style.display = 'none';
+    menuOverlay.onclick = function () {
+      closeMenus();
     };
-    document.body.appendChild(assignmentOverlay);
-    return assignmentOverlay;
+    document.body.appendChild(menuOverlay);
+    return menuOverlay;
   }
 
-  function closeAssigneeMenu() {
+  function closeMenus() {
     if (openAssigneeMenu) {
       openAssigneeMenu.style.display = 'none';
       openAssigneeMenu = null;
     }
-    if (assignmentOverlay) {
-      assignmentOverlay.style.display = 'none';
+    if (openDayMenu) {
+      openDayMenu.style.display = 'none';
+      openDayMenu = null;
+    }
+    if (menuOverlay) {
+      menuOverlay.style.display = 'none';
     }
   }
 
-  function openAssigneeMenuFor(menu) {
+  function openMenuFor(menu, type) {
     if (openAssigneeMenu && openAssigneeMenu !== menu) {
       openAssigneeMenu.style.display = 'none';
     }
-    ensureAssignmentOverlay().style.display = 'block';
+    if (openDayMenu && openDayMenu !== menu) {
+      openDayMenu.style.display = 'none';
+    }
+    ensureMenuOverlay().style.display = 'block';
     menu.style.display = 'block';
-    openAssigneeMenu = menu;
+    if (type === 'day') {
+      openDayMenu = menu;
+    } else {
+      openAssigneeMenu = menu;
+    }
   }
 
   function renderAssigneeControl(item, onChange) {
@@ -475,7 +576,7 @@
     kBtn.innerHTML = 'Kirsten';
     kBtn.onclick = function () {
       item.assigned = 'Kirsten';
-      closeAssigneeMenu();
+      closeMenus();
       onChange();
     };
 
@@ -484,7 +585,7 @@
     rBtn.innerHTML = 'Rob';
     rBtn.onclick = function () {
       item.assigned = 'Rob';
-      closeAssigneeMenu();
+      closeMenus();
       onChange();
     };
 
@@ -493,10 +594,10 @@
 
     badge.onclick = function () {
       if (openAssigneeMenu === menu && menu.style.display === 'block') {
-        closeAssigneeMenu();
+        closeMenus();
         return;
       }
-      openAssigneeMenuFor(menu);
+      openMenuFor(menu, 'assignee');
     };
 
     wrap.appendChild(badge);
@@ -508,12 +609,69 @@
       remove.innerHTML = '✕';
       remove.onclick = function () {
         item.assigned = '';
-        closeAssigneeMenu();
+        closeMenus();
         onChange();
       };
       wrap.appendChild(remove);
     }
 
+    return wrap;
+  }
+
+  function renderDayControl(item, onChange) {
+    var wrap = document.createElement('div');
+    wrap.className = 'day-control';
+
+    var badge = document.createElement('button');
+    badge.className = 'person day-badge';
+    if (item.scheduledDay) {
+      badge.className += ' day-assigned';
+      badge.innerHTML = item.scheduledDay.substring(0, 3).toUpperCase();
+    } else {
+      badge.className += ' day-unassigned';
+      badge.innerHTML = 'DAY';
+    }
+
+    var menu = document.createElement('div');
+    menu.className = 'assignee-menu day-menu';
+    menu.style.display = 'none';
+
+    var days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    var i;
+    for (i = 0; i < days.length; i++) {
+      var btn = document.createElement('button');
+      btn.className = 'assignee-option day-option';
+      btn.innerHTML = days[i].toUpperCase();
+      btn.onclick = function (dayName) {
+        return function () {
+          item.scheduledDay = dayName;
+          closeMenus();
+          onChange();
+        };
+      }(days[i]);
+      menu.appendChild(btn);
+    }
+
+    var clearBtn = document.createElement('button');
+    clearBtn.className = 'assignee-option day-option clear';
+    clearBtn.innerHTML = 'UNSCHEDULED';
+    clearBtn.onclick = function () {
+      item.scheduledDay = '';
+      closeMenus();
+      onChange();
+    };
+    menu.appendChild(clearBtn);
+
+    badge.onclick = function () {
+      if (openDayMenu === menu && menu.style.display === 'block') {
+        closeMenus();
+        return;
+      }
+      openMenuFor(menu, 'day');
+    };
+
+    wrap.appendChild(badge);
+    wrap.appendChild(menu);
     return wrap;
   }
 
@@ -525,6 +683,227 @@
         return;
       }
     }
+  }
+
+  var dragState = null;
+  var dragPressTimer = null;
+
+  function closestWithClass(node, className) {
+    var current = node;
+    while (current) {
+      if (current.className && (' ' + current.className + ' ').indexOf(' ' + className + ' ') > -1) {
+        return current;
+      }
+      current = current.parentNode;
+    }
+    return null;
+  }
+
+  function getOrderedIds(container) {
+    var ids = [];
+    var children = container ? container.children : [];
+    var i;
+    for (i = 0; i < children.length; i++) {
+      if (children[i].className && (' ' + children[i].className + ' ').indexOf(' item ') > -1) {
+        ids.push(children[i].getAttribute('data-id'));
+      }
+    }
+    return ids;
+  }
+
+  function reorderTodosInCategory(data, category, orderedIds) {
+    var idMap = {};
+    var i;
+    for (i = 0; i < data.todos.length; i++) {
+      if (data.todos[i].category === category) {
+        idMap[data.todos[i].id] = data.todos[i];
+      }
+    }
+    var orderedItems = [];
+    for (i = 0; i < orderedIds.length; i++) {
+      if (idMap[orderedIds[i]]) {
+        orderedItems.push(idMap[orderedIds[i]]);
+      }
+    }
+    var nextIndex = 0;
+    for (i = 0; i < data.todos.length; i++) {
+      if (data.todos[i].category === category) {
+        data.todos[i] = orderedItems[nextIndex] || data.todos[i];
+        nextIndex++;
+      }
+    }
+  }
+
+  function reorderChoresInGroup(data, frequency, day, orderedIds) {
+    var idMap = {};
+    var i;
+    for (i = 0; i < data.chores.length; i++) {
+      if (data.chores[i].frequency === frequency && (data.chores[i].scheduledDay || '') === (day || '')) {
+        idMap[data.chores[i].id] = data.chores[i];
+      }
+    }
+    var orderedItems = [];
+    for (i = 0; i < orderedIds.length; i++) {
+      if (idMap[orderedIds[i]]) {
+        orderedItems.push(idMap[orderedIds[i]]);
+      }
+    }
+    var nextIndex = 0;
+    for (i = 0; i < data.chores.length; i++) {
+      if (data.chores[i].frequency === frequency && (data.chores[i].scheduledDay || '') === (day || '')) {
+        data.chores[i] = orderedItems[nextIndex] || data.chores[i];
+        nextIndex++;
+      }
+    }
+  }
+
+  function beginDrag(row, touch) {
+    if (!row || !currentData) {
+      return;
+    }
+    closeMenus();
+    var container = closestWithClass(row.parentNode, 'drag-container');
+    if (!container) {
+      return;
+    }
+    var rect = row.getBoundingClientRect();
+    var placeholder = document.createElement('div');
+    placeholder.className = 'drag-placeholder';
+    placeholder.style.height = rect.height + 'px';
+    if (row.nextSibling) {
+      row.parentNode.insertBefore(placeholder, row.nextSibling);
+    } else {
+      row.parentNode.appendChild(placeholder);
+    }
+
+    var ghost = row.cloneNode(true);
+    ghost.className += ' drag-ghost';
+    ghost.style.position = 'fixed';
+    ghost.style.left = rect.left + 'px';
+    ghost.style.top = rect.top + 'px';
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
+    ghost.style.zIndex = '1000';
+    document.body.appendChild(ghost);
+
+    row.className += ' dragging-hidden';
+
+    dragState = {
+      active: true,
+      row: row,
+      ghost: ghost,
+      placeholder: placeholder,
+      container: container,
+      currentContainer: container,
+      type: row.getAttribute('data-type'),
+      category: row.getAttribute('data-category'),
+      frequency: row.getAttribute('data-frequency'),
+      day: row.getAttribute('data-day'),
+      offsetX: touch.clientX - rect.left,
+      offsetY: touch.clientY - rect.top
+    };
+  }
+
+  function updateDragPosition(touch) {
+    if (!dragState || !dragState.active) {
+      return;
+    }
+    dragState.ghost.style.left = (touch.clientX - dragState.offsetX) + 'px';
+    dragState.ghost.style.top = (touch.clientY - dragState.offsetY) + 'px';
+
+    var target = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!target) {
+      return;
+    }
+    var container = closestWithClass(target, 'drag-container');
+    if (!container) {
+      return;
+    }
+    var allowedContainer = false;
+    if (dragState.type === 'todo') {
+      allowedContainer = container === dragState.container;
+    } else if (dragState.type === 'chore') {
+      var containerFrequency = container.getAttribute('data-frequency') || '';
+      if (dragState.frequency === 'weekly') {
+        allowedContainer = containerFrequency === 'weekly';
+      } else {
+        allowedContainer = container === dragState.container;
+      }
+    }
+    if (!allowedContainer) {
+      return;
+    }
+    if (!dragState.currentContainer) {
+      dragState.currentContainer = dragState.container;
+    }
+    if (container !== dragState.currentContainer) {
+      dragState.currentContainer = container;
+    }
+    var targetItem = closestWithClass(target, 'item');
+    if (!targetItem || targetItem === dragState.row || targetItem.parentNode !== container) {
+      var empty = null;
+      if (container.getElementsByClassName) {
+        var emptyNodes = container.getElementsByClassName('empty-category');
+        if (emptyNodes && emptyNodes.length) {
+          empty = emptyNodes[0];
+        }
+      }
+      if (empty) {
+        container.insertBefore(dragState.placeholder, empty);
+      } else {
+        container.appendChild(dragState.placeholder);
+      }
+      return;
+    }
+    var rect = targetItem.getBoundingClientRect();
+    if (touch.clientY < rect.top + rect.height / 2) {
+      container.insertBefore(dragState.placeholder, targetItem);
+    } else {
+      if (targetItem.nextSibling) {
+        container.insertBefore(dragState.placeholder, targetItem.nextSibling);
+      } else {
+        container.appendChild(dragState.placeholder);
+      }
+    }
+  }
+
+  function finishDrag() {
+    if (!dragState || !dragState.active) {
+      dragState = null;
+      return;
+    }
+    var container = dragState.currentContainer || dragState.container;
+    if (dragState.placeholder.parentNode) {
+      dragState.placeholder.parentNode.insertBefore(dragState.row, dragState.placeholder);
+      dragState.placeholder.parentNode.removeChild(dragState.placeholder);
+    }
+    if (dragState.ghost && dragState.ghost.parentNode) {
+      dragState.ghost.parentNode.removeChild(dragState.ghost);
+    }
+    dragState.row.className = dragState.row.className.replace(' dragging-hidden', '');
+
+    var orderedIds = getOrderedIds(container);
+    if (dragState.type === 'todo') {
+      reorderTodosInCategory(currentData, dragState.category, orderedIds);
+      saveData(currentData);
+      renderTodos(currentData);
+    } else if (dragState.type === 'chore') {
+      var newDay = dragState.day;
+      if (dragState.frequency === 'weekly' && dragState.currentContainer && dragState.currentContainer !== dragState.container) {
+        newDay = dragState.currentContainer.getAttribute('data-day') || '';
+        var i;
+        for (i = 0; i < currentData.chores.length; i++) {
+          if (currentData.chores[i].id == dragState.row.getAttribute('data-id')) {
+            currentData.chores[i].scheduledDay = newDay;
+            break;
+          }
+        }
+      }
+      reorderChoresInGroup(currentData, dragState.frequency, newDay, orderedIds);
+      saveData(currentData);
+      renderChores(currentData);
+    }
+    dragState = null;
   }
 
   var activeTab = 'todos';
@@ -625,7 +1004,8 @@
         text: text,
         done: false,
         assigned: '',
-        frequency: choreFrequency.value
+        frequency: choreFrequency.value,
+        scheduledDay: ''
       });
       choreInput.value = '';
       saveData(currentData);
@@ -654,6 +1034,80 @@
       saveData(currentData);
       renderTodos(currentData);
     };
+
+    document.addEventListener('touchstart', function (e) {
+      if (!e.touches || e.touches.length !== 1) {
+        return;
+      }
+      var handle = closestWithClass(e.target, 'drag-handle');
+      if (!handle) {
+        return;
+      }
+      var row = closestWithClass(handle, 'item');
+      if (!row) {
+        return;
+      }
+      var touch = e.touches[0];
+      dragState = {
+        pending: true,
+        row: row,
+        startX: touch.clientX,
+        startY: touch.clientY
+      };
+      if (dragPressTimer) {
+        clearTimeout(dragPressTimer);
+      }
+      dragPressTimer = setTimeout(function () {
+        if (dragState && dragState.pending) {
+          dragState.pending = false;
+          beginDrag(row, touch);
+        }
+      }, 200);
+    }, false);
+
+    document.addEventListener('touchmove', function (e) {
+      if (!dragState) {
+        return;
+      }
+      if (dragState.pending) {
+        var touch = e.touches[0];
+        var dx = Math.abs(touch.clientX - dragState.startX);
+        var dy = Math.abs(touch.clientY - dragState.startY);
+        if (dx > 6 || dy > 6) {
+          clearTimeout(dragPressTimer);
+          dragState = null;
+        } else {
+          e.preventDefault();
+        }
+        return;
+      }
+      if (dragState.active) {
+        e.preventDefault();
+        updateDragPosition(e.touches[0]);
+      }
+    }, { passive: false });
+
+    document.addEventListener('touchend', function () {
+      if (dragState && dragState.pending) {
+        clearTimeout(dragPressTimer);
+        dragState = null;
+        return;
+      }
+      if (dragState && dragState.active) {
+        finishDrag();
+      }
+    }, false);
+
+    document.addEventListener('touchcancel', function () {
+      if (dragState && dragState.pending) {
+        clearTimeout(dragPressTimer);
+        dragState = null;
+        return;
+      }
+      if (dragState && dragState.active) {
+        finishDrag();
+      }
+    }, false);
   }
 
   function init() {
