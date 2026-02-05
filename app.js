@@ -233,13 +233,13 @@
     var viewTodos = document.getElementById('view-todos');
 
     if (tabName === 'chores') {
-      tabChores.className = 'tab active';
-      tabTodos.className = 'tab';
+      tabChores.className = 'sidebar-item active';
+      tabTodos.className = 'sidebar-item';
       viewChores.className = 'view active';
       viewTodos.className = 'view';
     } else {
-      tabChores.className = 'tab';
-      tabTodos.className = 'tab active';
+      tabChores.className = 'sidebar-item';
+      tabTodos.className = 'sidebar-item active';
       viewChores.className = 'view';
       viewTodos.className = 'view active';
     }
