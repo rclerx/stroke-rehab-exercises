@@ -8,29 +8,46 @@
   <meta name="apple-mobile-web-app-title" content="Dashboard" />
   <link rel="apple-touch-icon" href="icon.png" />
   <title>Family Dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="stylesheet" href="styles.css?v=8" />
 </head>
 <body>
   <div class="app">
-    <header class="top">
-      <div class="title">Family Dashboard</div>
-      <div class="header-right">
-        <div id="current-date" class="date"></div>
-        <div class="overflow-menu-wrap">
-          <button id="overflow-btn" class="overflow-btn" type="button">&#8942;</button>
-          <div id="overflow-menu" class="overflow-menu" style="display:none;">
-            <button id="delete-checked-btn" class="overflow-item danger" type="button">Delete checked items</button>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <nav class="tabs">
-      <button id="tab-todos" class="tab active" type="button">To Do List</button>
-      <button id="tab-chores" class="tab" type="button">Chores</button>
+    <nav class="sidebar">
+      <button id="tab-todos" class="sidebar-item active" type="button">
+        <span class="sidebar-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle>
+            <path d="M8.5 12.5l2.5 2.5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </span>
+        <span class="sidebar-label">To Do</span>
+      </button>
+      <button id="tab-chores" class="sidebar-item" type="button">
+        <span class="sidebar-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 7h4M7 7V3m0 4a7 7 0 0 1 11.3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M17 17h-4m4 0v4m0-4a7 7 0 0 1-11.3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </span>
+        <span class="sidebar-label">Chores</span>
+      </button>
     </nav>
 
-    <main>
+    <div class="content">
+      <header class="top">
+        <div class="title">Family Dashboard</div>
+        <div class="header-right">
+          <div id="current-date" class="date"></div>
+          <div class="overflow-menu-wrap">
+            <button id="overflow-btn" class="overflow-btn" type="button">&#8942;</button>
+            <div id="overflow-menu" class="overflow-menu" style="display:none;">
+              <button id="delete-checked-btn" class="overflow-item danger" type="button">Delete checked items</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-content">
       <section id="view-chores" class="view">
         <div class="section-head">
           <div class="section-title">Chores</div>
@@ -65,9 +82,10 @@
           <button id="todo-add" class="primary" type="button">Add</button>
         </div>
       </section>
-    </main>
+      </main>
+    </div>
   </div>
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
