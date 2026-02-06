@@ -995,8 +995,9 @@
     }
 
     var menu = document.createElement('div');
-    menu.className = 'assignee-menu';
+    menu.className = 'assignee-menu assignee-menu-portal';
     menu.style.display = 'none';
+    menu.style.position = 'fixed';
 
     var kBtn = document.createElement('button');
     kBtn.className = 'assignee-option kirsten';
@@ -1019,16 +1020,23 @@
     menu.appendChild(kBtn);
     menu.appendChild(rBtn);
 
+    // Append menu to body to escape stacking context (iOS Safari fix)
+    document.body.appendChild(menu);
+
     badge.onclick = function () {
       if (openAssigneeMenu === menu && menu.style.display === 'block') {
         closeMenus();
         return;
       }
+      // Position menu relative to badge
+      var rect = badge.getBoundingClientRect();
+      menu.style.top = (rect.bottom + 6) + 'px';
+      menu.style.right = (window.innerWidth - rect.right) + 'px';
+      menu.style.left = 'auto';
       openMenuFor(menu, 'assignee');
     };
 
     wrap.appendChild(badge);
-    wrap.appendChild(menu);
 
     if (item.assigned) {
       var remove = document.createElement('button');

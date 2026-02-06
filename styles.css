@@ -609,6 +609,12 @@ html, body {
   z-index: 10;
 }
 
+.assignee-menu-portal {
+  position: fixed;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
 .assignee-option {
   display: block;
   width: 100%;
