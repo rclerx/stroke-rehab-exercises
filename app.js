@@ -120,12 +120,29 @@
     ];
   }
 
+  function defaultKidChores() {
+    return [
+      { id: makeId(), text: 'Make bed', done: false, kid: 'kayden' },
+      { id: makeId(), text: 'Pick up toys', done: false, kid: 'kayden' },
+      { id: makeId(), text: 'Put away laundry', done: false, kid: 'kayden' },
+      { id: makeId(), text: 'Feed pets', done: false, kid: 'kayden' },
+      { id: makeId(), text: 'Clear plate after dinner', done: false, kid: 'kayden' },
+      { id: makeId(), text: 'Make bed', done: false, kid: 'oliver' },
+      { id: makeId(), text: 'Pick up toys', done: false, kid: 'oliver' },
+      { id: makeId(), text: 'Put away laundry', done: false, kid: 'oliver' },
+      { id: makeId(), text: 'Help set table', done: false, kid: 'oliver' },
+      { id: makeId(), text: 'Put shoes away', done: false, kid: 'oliver' }
+    ];
+  }
+
   function defaultData() {
     return {
       lastReset: startOfWeekMonday(new Date()),
       lastDailyReset: todayDateString(),
+      lastKidChoresReset: todayDateString(),
       choresVersion: CHORES_VERSION,
       chores: defaultChores(),
+      kidChores: defaultKidChores(),
       todos: []
     };
   }
@@ -162,6 +179,18 @@
     }
   }
 
+  function ensureKidChoresReset(data) {
+    var today = todayDateString();
+    if (!data.lastKidChoresReset || data.lastKidChoresReset < today) {
+      var i;
+      for (i = 0; i < data.kidChores.length; i++) {
+        data.kidChores[i].done = false;
+      }
+      data.lastKidChoresReset = today;
+      saveData(data);
+    }
+  }
+
   function normalizeChores(list) {
     var result = [];
     var i;
@@ -183,11 +212,31 @@
     return result;
   }
 
+  function normalizeKidChores(list) {
+    var result = [];
+    var i;
+    if (!list || !list.length) {
+      return result;
+    }
+    for (i = 0; i < list.length; i++) {
+      var item = list[i] || {};
+      var kidKey = item.kid === 'oliver' ? 'oliver' : 'kayden';
+      result.push({
+        id: item.id || makeId(),
+        text: item.text || '',
+        done: !!item.done,
+        kid: kidKey
+      });
+    }
+    return result;
+  }
+
   function normalizeData(data) {
     if (!data || typeof data !== 'object') {
       return defaultData();
     }
     var chores = normalizeChores(data.chores);
+    var kidChores = normalizeKidChores(data.kidChores);
     // Migrate chores if version is outdated
     if (!data.choresVersion || data.choresVersion < CHORES_VERSION) {
       chores = defaultChores();
@@ -195,8 +244,10 @@
     return {
       lastReset: data.lastReset || startOfWeekMonday(new Date()),
       lastDailyReset: data.lastDailyReset || todayDateString(),
+      lastKidChoresReset: data.lastKidChoresReset || todayDateString(),
       choresVersion: CHORES_VERSION,
       chores: chores,
+      kidChores: kidChores && kidChores.length ? kidChores : defaultKidChores(),
       todos: data.todos && data.todos.length ? data.todos : []
     };
   }
@@ -230,20 +281,396 @@
   function switchTab(tabName) {
     var tabChores = document.getElementById('tab-chores');
     var tabTodos = document.getElementById('tab-todos');
+    var tabKidChores = document.getElementById('tab-kidchores');
     var viewChores = document.getElementById('view-chores');
     var viewTodos = document.getElementById('view-todos');
+    var viewKidChores = document.getElementById('view-kidchores');
 
     if (tabName === 'chores') {
       tabChores.className = 'sidebar-item active';
       tabTodos.className = 'sidebar-item';
+      tabKidChores.className = 'sidebar-item kid-tab';
       viewChores.className = 'view active';
+      viewKidChores.className = 'view';
+      viewTodos.className = 'view';
+    } else if (tabName === 'kidchores') {
+      tabChores.className = 'sidebar-item';
+      tabTodos.className = 'sidebar-item';
+      tabKidChores.className = 'sidebar-item kid-tab kid-active';
+      viewChores.className = 'view';
+      viewKidChores.className = 'view active';
       viewTodos.className = 'view';
     } else {
       tabChores.className = 'sidebar-item';
       tabTodos.className = 'sidebar-item active';
+      tabKidChores.className = 'sidebar-item kid-tab';
       viewChores.className = 'view';
+      viewKidChores.className = 'view';
       viewTodos.className = 'view active';
     }
+  }
+
+  function renderKidChores(data) {
+    closeMenus();
+    var listKayden = document.getElementById('kid-list-kayden');
+    var listOliver = document.getElementById('kid-list-oliver');
+    if (!listKayden || !listOliver) {
+      return;
+    }
+    listKayden.innerHTML = '';
+    listOliver.innerHTML = '';
+    var i;
+    for (i = 0; i < data.kidChores.length; i++) {
+      var item = data.kidChores[i];
+      if (item.kid === 'oliver') {
+        listOliver.appendChild(renderKidChoreItem(data, item));
+      } else {
+        listKayden.appendChild(renderKidChoreItem(data, item));
+      }
+    }
+    if (!listKayden.children.length) {
+      var emptyKayden = document.createElement('div');
+      emptyKayden.className = 'empty-category';
+      emptyKayden.innerHTML = '—';
+      listKayden.appendChild(emptyKayden);
+    }
+    if (!listOliver.children.length) {
+      var emptyOliver = document.createElement('div');
+      emptyOliver.className = 'empty-category';
+      emptyOliver.innerHTML = '—';
+      listOliver.appendChild(emptyOliver);
+    }
+    updateKidProgressUI(data);
+  }
+
+  function kidMetaFor(kid) {
+    if (kid === 'oliver') {
+      return { name: 'Oliver', color: '#2196F3' };
+    }
+    return { name: 'Kayden', color: '#4CAF50' };
+  }
+
+  function renderKidChoreItem(data, item) {
+    var meta = kidMetaFor(item.kid);
+    var row = document.createElement('div');
+    row.className = item.done ? 'item kid-item is-done' : 'item kid-item';
+    row.setAttribute('data-id', item.id);
+    row.setAttribute('data-type', 'kidchore');
+    row.setAttribute('data-kid', item.kid);
+    row.style.setProperty('--kid-accent', meta.color);
+
+    var left = document.createElement('div');
+    left.className = 'item-left';
+
+    var checkboxWrap = document.createElement('label');
+    checkboxWrap.className = 'checkbox-wrap';
+    var checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'checkbox-input';
+    checkbox.checked = item.done;
+    var checkboxUi = document.createElement('span');
+    checkboxUi.className = 'checkbox-ui';
+    checkboxWrap.appendChild(checkbox);
+    checkboxWrap.appendChild(checkboxUi);
+
+    var textWrap = document.createElement('div');
+    var title = document.createElement('div');
+    title.className = 'item-title';
+    title.innerHTML = item.text;
+    textWrap.appendChild(title);
+
+    left.appendChild(checkboxWrap);
+    left.appendChild(textWrap);
+    row.appendChild(left);
+
+    checkbox.onclick = function () {
+      var wasComplete = isKidComplete(data, item.kid);
+      item.done = checkbox.checked;
+      row.className = item.done ? 'item kid-item is-done' : 'item kid-item';
+      saveData(data);
+      if (item.done) {
+        triggerConfettiBurst(checkboxUi, meta.color, 36, false);
+      }
+      updateKidProgressUI(data);
+      if (item.done && !wasComplete && isKidComplete(data, item.kid)) {
+        triggerKidCelebration(meta.name, meta.color);
+      }
+    };
+
+    return row;
+  }
+
+  function getKidStats(data, kid) {
+    var total = 0;
+    var done = 0;
+    var i;
+    for (i = 0; i < data.kidChores.length; i++) {
+      if (data.kidChores[i].kid === kid) {
+        total++;
+        if (data.kidChores[i].done) {
+          done++;
+        }
+      }
+    }
+    return { total: total, done: done };
+  }
+
+  function isKidComplete(data, kid) {
+    var stats = getKidStats(data, kid);
+    return stats.total > 0 && stats.done === stats.total;
+  }
+
+  function updateKidProgressUI(data) {
+    var kids = ['kayden', 'oliver'];
+    var i;
+    for (i = 0; i < kids.length; i++) {
+      var kid = kids[i];
+      var stats = getKidStats(data, kid);
+      var percent = stats.total ? Math.round((stats.done / stats.total) * 100) : 0;
+      var bar = document.getElementById('kid-progress-bar-' + kid);
+      var text = document.getElementById('kid-progress-text-' + kid);
+      if (bar) {
+        bar.style.width = percent + '%';
+      }
+      if (text) {
+        text.innerHTML = stats.done + ' / ' + stats.total + ' done (' + percent + '%)';
+      }
+    }
+  }
+
+  function triggerConfettiBurst(anchorEl, baseColor, count, bigMode) {
+    if (!anchorEl) {
+      return;
+    }
+    var rect = anchorEl.getBoundingClientRect();
+    var x = rect.left + rect.width / 2;
+    var y = rect.top + rect.height / 2;
+    spawnConfetti(x, y, baseColor, count, bigMode);
+  }
+
+  function spawnConfetti(x, y, baseColor, count, bigMode) {
+    var colors = [baseColor, '#ffd54f', '#ffca28', '#fff59d'];
+    var i;
+    for (i = 0; i < count; i++) {
+      var particle = document.createElement('div');
+      var color = colors[Math.floor(Math.random() * colors.length)];
+      var size = bigMode ? 10 + Math.floor(Math.random() * 6) : 6 + Math.floor(Math.random() * 5);
+      var dx = (Math.random() * 2 - 1) * (bigMode ? 320 : 140);
+      var dy = (Math.random() * 2 - 1) * (bigMode ? 280 : 120);
+      var rot = Math.floor(Math.random() * 360) + 'deg';
+      var isCircle = Math.random() > 0.5;
+
+      particle.className = 'confetti-particle' + (isCircle ? ' circle' : '') + (bigMode ? ' big' : '');
+      particle.style.left = x + 'px';
+      particle.style.top = y + 'px';
+      particle.style.width = size + 'px';
+      particle.style.height = size + 'px';
+      particle.style.backgroundColor = color;
+      particle.style.setProperty('--dx', dx + 'px');
+      particle.style.setProperty('--dy', dy + 'px');
+      particle.style.setProperty('--rot', rot);
+
+      document.body.appendChild(particle);
+      setTimeout(function (node) {
+        return function () {
+          if (node && node.parentNode) {
+            node.parentNode.removeChild(node);
+          }
+        };
+      }(particle), bigMode ? 1300 : 1100);
+    }
+  }
+
+  function getKidChoreTexts(data, kid) {
+    var texts = [];
+    var i;
+    for (i = 0; i < data.kidChores.length; i++) {
+      if (data.kidChores[i].kid === kid) {
+        texts.push(data.kidChores[i].text);
+      }
+    }
+    return texts;
+  }
+
+  // JS-based animation for iOS 12 compatibility
+  function animateTrexChomp(trexImg, duration) {
+    var startTime = Date.now();
+    var chompInterval = setInterval(function() {
+      var elapsed = Date.now() - startTime;
+      if (elapsed > duration) {
+        clearInterval(chompInterval);
+        trexImg.style.transform = 'scale(1) rotate(0deg) translateY(0)';
+        return;
+      }
+      // Combine bounce, chomp (scale), and shake (rotate)
+      var t = (elapsed % 600) / 600;
+      var bounce = Math.sin(t * Math.PI) * 8;
+      var scaleX = 1 + Math.sin(t * Math.PI * 2) * 0.02;
+      var scaleY = 1 - Math.sin(t * Math.PI * 2) * 0.02;
+      var shake = Math.sin(t * Math.PI * 4) * 1.5;
+      trexImg.style.transform = 'translateY(' + (-bounce) + 'px) scale(' + scaleX + ',' + scaleY + ') rotate(' + shake + 'deg)';
+    }, 30);
+    return chompInterval;
+  }
+
+  // JS-based paper fly animation
+  function animatePaper(paper, startX, startY, startRot, endX, endY, duration, onDone) {
+    var startTime = Date.now();
+    paper.style.opacity = '1';
+    paper.style.left = '0px';
+    paper.style.top = '0px';
+
+    var flyInterval = setInterval(function() {
+      var elapsed = Date.now() - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+      // Ease out
+      var ease = 1 - Math.pow(1 - progress, 3);
+
+      var currentX = startX + (endX - startX) * ease;
+      var currentY = startY + (endY - startY) * ease;
+      var currentRot = startRot + (90 - startRot) * ease;
+      var currentScale = 1 - (0.6 * ease);
+      var currentOpacity = progress < 0.7 ? 1 : 1 - ((progress - 0.7) / 0.3);
+
+      paper.style.transform = 'translate(' + currentX + 'px,' + currentY + 'px) rotate(' + currentRot + 'deg) scale(' + currentScale + ')';
+      paper.style.opacity = String(currentOpacity);
+
+      if (progress >= 1) {
+        clearInterval(flyInterval);
+        paper.style.opacity = '0';
+        if (onDone) {
+          onDone();
+        }
+      }
+    }, 30);
+  }
+
+  // JS-based message pop animation
+  function animateMessagePop(message) {
+    var startTime = Date.now();
+    var duration = 400;
+    message.style.opacity = '1';
+
+    var popInterval = setInterval(function() {
+      var elapsed = Date.now() - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+
+      var scale;
+      if (progress < 0.6) {
+        scale = 0.5 + (0.62 * (progress / 0.6));
+      } else {
+        scale = 1.12 - (0.12 * ((progress - 0.6) / 0.4));
+      }
+
+      message.style.transform = 'scale(' + scale + ')';
+      message.style.opacity = String(progress);
+
+      if (progress >= 1) {
+        clearInterval(popInterval);
+        message.style.transform = 'scale(1)';
+        message.style.opacity = '1';
+      }
+    }, 20);
+  }
+
+  function triggerKidCelebration(kidName, color) {
+    var isOliver = kidName === 'Oliver';
+    var choreTexts = getKidChoreTexts(currentData, isOliver ? 'oliver' : 'kayden');
+
+    // Create overlay
+    var overlay = document.createElement('div');
+    overlay.className = 'trex-overlay';
+    overlay.style.opacity = '0';
+
+    // Create T-Rex wrapper
+    var trexWrap = document.createElement('div');
+    trexWrap.className = 'trex-wrap';
+
+    // T-Rex image
+    var trexImg = document.createElement('img');
+    trexImg.className = 'trex';
+    trexImg.src = 'assets/trex-chores-chomp.png';
+    trexImg.alt = '';
+    trexWrap.appendChild(trexImg);
+
+    // Papers container
+    var papersDiv = document.createElement('div');
+    papersDiv.className = 'papers';
+    trexWrap.appendChild(papersDiv);
+
+    // Message (centered with CSS margin trick for iOS 12)
+    var message = document.createElement('div');
+    message.className = 'trex-message';
+    message.innerHTML = '🦖 Great job, ' + kidName + '!';
+    trexWrap.appendChild(message);
+
+    overlay.appendChild(trexWrap);
+    document.body.appendChild(overlay);
+
+    // Fade in overlay
+    var fadeIn = setInterval(function() {
+      var op = parseFloat(overlay.style.opacity) || 0;
+      if (op >= 1) {
+        clearInterval(fadeIn);
+        return;
+      }
+      overlay.style.opacity = String(op + 0.1);
+    }, 30);
+
+    // Paper start positions (scattered around edges)
+    var startPositions = [
+      { x: -60, y: 350 },
+      { x: 280, y: 380 },
+      { x: -80, y: 280 },
+      { x: 300, y: 320 },
+      { x: -40, y: 420 },
+      { x: 260, y: 250 },
+      { x: -70, y: 200 },
+      { x: 290, y: 400 }
+    ];
+
+    // Mouth position (relative to trex-wrap)
+    var mouthX = 140;
+    var mouthY = 120;
+
+    // Create papers
+    var papers = [];
+    var i;
+    for (i = 0; i < choreTexts.length; i++) {
+      var paper = document.createElement('div');
+      paper.className = 'paper';
+      paper.innerHTML = choreTexts[i];
+      paper.style.opacity = '0';
+      papersDiv.appendChild(paper);
+      papers.push(paper);
+    }
+
+    // Start chomping
+    var chompDuration = (choreTexts.length * 350) + 800;
+    var chompInterval = animateTrexChomp(trexImg, chompDuration);
+
+    // Animate papers flying in, staggered
+    for (i = 0; i < papers.length; i++) {
+      (function(index) {
+        var pos = startPositions[index % startPositions.length];
+        var startRot = -20 + Math.random() * 40;
+        setTimeout(function() {
+          animatePaper(papers[index], pos.x, pos.y, startRot, mouthX, mouthY, 800, null);
+        }, index * 350);
+      })(i);
+    }
+
+    // Show message after chomping done
+    setTimeout(function() {
+      animateMessagePop(message);
+    }, chompDuration + 200);
+
+    // Remove overlay (extra 2 seconds to admire)
+    setTimeout(function() {
+      if (overlay && overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+      }
+    }, chompDuration + 4500);
   }
 
   function renderChores(data) {
@@ -915,6 +1342,7 @@
     eventsBound = true;
     var tabChores = document.getElementById('tab-chores');
     var tabTodos = document.getElementById('tab-todos');
+    var tabKidChores = document.getElementById('tab-kidchores');
 
     tabChores.onclick = function () {
       activeTab = 'chores';
@@ -923,6 +1351,10 @@
     tabTodos.onclick = function () {
       activeTab = 'todos';
       switchTab('todos');
+    };
+    tabKidChores.onclick = function () {
+      activeTab = 'kidchores';
+      switchTab('kidchores');
     };
 
     // Overflow menu
@@ -974,7 +1406,7 @@
         currentData.todos = kept;
         saveData(currentData);
         renderTodos(currentData);
-      } else {
+      } else if (activeTab === 'chores') {
         var keptChores = [];
         var j;
         for (j = 0; j < currentData.chores.length; j++) {
@@ -985,6 +1417,17 @@
         currentData.chores = keptChores;
         saveData(currentData);
         renderChores(currentData);
+      } else if (activeTab === 'kidchores') {
+        var keptKidChores = [];
+        var k;
+        for (k = 0; k < currentData.kidChores.length; k++) {
+          if (!currentData.kidChores[k].done) {
+            keptKidChores.push(currentData.kidChores[k]);
+          }
+        }
+        currentData.kidChores = keptKidChores;
+        saveData(currentData);
+        renderKidChores(currentData);
       }
     };
 
@@ -1033,6 +1476,28 @@
       todoInput.value = '';
       saveData(currentData);
       renderTodos(currentData);
+    };
+
+    var kidChoreInput = document.getElementById('kid-chore-input');
+    var kidChoreAdd = document.getElementById('kid-chore-add');
+    var kidChoreKid = document.getElementById('kid-chore-kid');
+    kidChoreAdd.onclick = function () {
+      if (!currentData) {
+        return;
+      }
+      var text = kidChoreInput.value.replace(/^\s+|\s+$/g, '');
+      if (!text) {
+        return;
+      }
+      currentData.kidChores.push({
+        id: makeId(),
+        text: text,
+        done: false,
+        kid: kidChoreKid.value === 'oliver' ? 'oliver' : 'kayden'
+      });
+      kidChoreInput.value = '';
+      saveData(currentData);
+      renderKidChores(currentData);
     };
 
     document.addEventListener('touchstart', function (e) {
@@ -1116,8 +1581,10 @@
       currentData = normalizeData(data);
       ensureDailyReset(currentData);
       ensureWeeklyReset(currentData);
+      ensureKidChoresReset(currentData);
       bindEvents();
       renderChores(currentData);
+      renderKidChores(currentData);
       renderTodos(currentData);
       switchTab('todos');
     });
