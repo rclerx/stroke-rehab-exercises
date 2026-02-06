@@ -481,23 +481,196 @@
     }
   }
 
+  function getKidChoreTexts(data, kid) {
+    var texts = [];
+    var i;
+    for (i = 0; i < data.kidChores.length; i++) {
+      if (data.kidChores[i].kid === kid) {
+        texts.push(data.kidChores[i].text);
+      }
+    }
+    return texts;
+  }
+
+  // JS-based animation for iOS 12 compatibility
+  function animateTrexChomp(trexImg, duration) {
+    var startTime = Date.now();
+    var chompInterval = setInterval(function() {
+      var elapsed = Date.now() - startTime;
+      if (elapsed > duration) {
+        clearInterval(chompInterval);
+        trexImg.style.transform = 'scale(1) rotate(0deg) translateY(0)';
+        return;
+      }
+      // Combine bounce, chomp (scale), and shake (rotate)
+      var t = (elapsed % 600) / 600;
+      var bounce = Math.sin(t * Math.PI) * 8;
+      var scaleX = 1 + Math.sin(t * Math.PI * 2) * 0.02;
+      var scaleY = 1 - Math.sin(t * Math.PI * 2) * 0.02;
+      var shake = Math.sin(t * Math.PI * 4) * 1.5;
+      trexImg.style.transform = 'translateY(' + (-bounce) + 'px) scale(' + scaleX + ',' + scaleY + ') rotate(' + shake + 'deg)';
+    }, 30);
+    return chompInterval;
+  }
+
+  // JS-based paper fly animation
+  function animatePaper(paper, startX, startY, startRot, endX, endY, duration, onDone) {
+    var startTime = Date.now();
+    paper.style.opacity = '1';
+    paper.style.left = '0px';
+    paper.style.top = '0px';
+
+    var flyInterval = setInterval(function() {
+      var elapsed = Date.now() - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+      // Ease out
+      var ease = 1 - Math.pow(1 - progress, 3);
+
+      var currentX = startX + (endX - startX) * ease;
+      var currentY = startY + (endY - startY) * ease;
+      var currentRot = startRot + (90 - startRot) * ease;
+      var currentScale = 1 - (0.6 * ease);
+      var currentOpacity = progress < 0.7 ? 1 : 1 - ((progress - 0.7) / 0.3);
+
+      paper.style.transform = 'translate(' + currentX + 'px,' + currentY + 'px) rotate(' + currentRot + 'deg) scale(' + currentScale + ')';
+      paper.style.opacity = String(currentOpacity);
+
+      if (progress >= 1) {
+        clearInterval(flyInterval);
+        paper.style.opacity = '0';
+        if (onDone) {
+          onDone();
+        }
+      }
+    }, 30);
+  }
+
+  // JS-based message pop animation
+  function animateMessagePop(message) {
+    var startTime = Date.now();
+    var duration = 400;
+    message.style.opacity = '1';
+
+    var popInterval = setInterval(function() {
+      var elapsed = Date.now() - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+
+      var scale;
+      if (progress < 0.6) {
+        scale = 0.5 + (0.62 * (progress / 0.6));
+      } else {
+        scale = 1.12 - (0.12 * ((progress - 0.6) / 0.4));
+      }
+
+      message.style.transform = 'scale(' + scale + ')';
+      message.style.opacity = String(progress);
+
+      if (progress >= 1) {
+        clearInterval(popInterval);
+        message.style.transform = 'scale(1)';
+        message.style.opacity = '1';
+      }
+    }, 20);
+  }
+
   function triggerKidCelebration(kidName, color) {
+    var isOliver = kidName === 'Oliver';
+    var choreTexts = getKidChoreTexts(currentData, isOliver ? 'oliver' : 'kayden');
+
+    // Create overlay
     var overlay = document.createElement('div');
-    overlay.className = 'kid-celebration';
+    overlay.className = 'trex-overlay';
+    overlay.style.opacity = '0';
+
+    // Create T-Rex wrapper
+    var trexWrap = document.createElement('div');
+    trexWrap.className = 'trex-wrap';
+
+    // T-Rex image
+    var trexImg = document.createElement('img');
+    trexImg.className = 'trex';
+    trexImg.src = 'assets/trex-chores-chomp.png';
+    trexImg.alt = '';
+    trexWrap.appendChild(trexImg);
+
+    // Papers container
+    var papersDiv = document.createElement('div');
+    papersDiv.className = 'papers';
+    trexWrap.appendChild(papersDiv);
+
+    // Message (centered with CSS margin trick for iOS 12)
     var message = document.createElement('div');
-    message.className = 'kid-celebration-message';
-    message.style.borderColor = color;
-    message.innerHTML = '🎉 Amazing job, ' + kidName + '! 🎉';
-    overlay.appendChild(message);
+    message.className = 'trex-message';
+    message.innerHTML = '🦖 Great job, ' + kidName + '!';
+    trexWrap.appendChild(message);
+
+    overlay.appendChild(trexWrap);
     document.body.appendChild(overlay);
 
-    spawnConfetti(window.innerWidth / 2, window.innerHeight / 2, color, 120, true);
+    // Fade in overlay
+    var fadeIn = setInterval(function() {
+      var op = parseFloat(overlay.style.opacity) || 0;
+      if (op >= 1) {
+        clearInterval(fadeIn);
+        return;
+      }
+      overlay.style.opacity = String(op + 0.1);
+    }, 30);
 
-    setTimeout(function () {
+    // Paper start positions (scattered around edges)
+    var startPositions = [
+      { x: -60, y: 350 },
+      { x: 280, y: 380 },
+      { x: -80, y: 280 },
+      { x: 300, y: 320 },
+      { x: -40, y: 420 },
+      { x: 260, y: 250 },
+      { x: -70, y: 200 },
+      { x: 290, y: 400 }
+    ];
+
+    // Mouth position (relative to trex-wrap)
+    var mouthX = 140;
+    var mouthY = 120;
+
+    // Create papers
+    var papers = [];
+    var i;
+    for (i = 0; i < choreTexts.length; i++) {
+      var paper = document.createElement('div');
+      paper.className = 'paper';
+      paper.innerHTML = choreTexts[i];
+      paper.style.opacity = '0';
+      papersDiv.appendChild(paper);
+      papers.push(paper);
+    }
+
+    // Start chomping
+    var chompDuration = (choreTexts.length * 350) + 800;
+    var chompInterval = animateTrexChomp(trexImg, chompDuration);
+
+    // Animate papers flying in, staggered
+    for (i = 0; i < papers.length; i++) {
+      (function(index) {
+        var pos = startPositions[index % startPositions.length];
+        var startRot = -20 + Math.random() * 40;
+        setTimeout(function() {
+          animatePaper(papers[index], pos.x, pos.y, startRot, mouthX, mouthY, 800, null);
+        }, index * 350);
+      })(i);
+    }
+
+    // Show message after chomping done
+    setTimeout(function() {
+      animateMessagePop(message);
+    }, chompDuration + 200);
+
+    // Remove overlay (extra 2 seconds to admire)
+    setTimeout(function() {
       if (overlay && overlay.parentNode) {
         overlay.parentNode.removeChild(overlay);
       }
-    }, 3000);
+    }, chompDuration + 4500);
   }
 
   function renderChores(data) {

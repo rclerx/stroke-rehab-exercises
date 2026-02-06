@@ -742,29 +742,77 @@ button.primary {
   animation: confetti-pop-big 1.2s ease-out forwards;
 }
 
-.kid-celebration {
+/* T-Rex Celebration Overlay */
+.trex-overlay {
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
-  background: rgba(15, 23, 42, 0.35);
+  background: rgba(15, 23, 42, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9998;
+  overflow: hidden;
 }
 
-.kid-celebration-message {
+.trex-wrap {
+  position: relative;
+  width: 340px;
+  max-width: 90vw;
+  margin: 0 auto;
+}
+
+.trex {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.papers {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow: visible;
+}
+
+.paper {
+  position: absolute;
+  width: 80px;
+  height: 48px;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 11px/1.2 system-ui, -apple-system, Arial;
+  color: #1b1b1b;
+  text-align: center;
+  padding: 4px;
+  opacity: 0;
+}
+
+.trex-message {
+  position: absolute;
+  bottom: -50px;
+  left: 50%;
+  margin-left: -140px;
+  width: 280px;
   background: #ffffff;
   color: #1a3052;
-  padding: 18px 28px;
-  border-radius: 16px;
+  padding: 12px 24px;
+  border-radius: 14px;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
   text-align: center;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
-  animation: kid-bounce 0.9s ease;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  opacity: 0;
 }
 
 @keyframes confetti-pop {
