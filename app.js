@@ -268,7 +268,7 @@
       return;
     }
     var now = new Date();
-    var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Denver' };
     var dateText;
     try {
       dateText = now.toLocaleDateString('en-US', options);
@@ -1583,8 +1583,24 @@
     }, false);
   }
 
+  function refreshOnWake() {
+    if (document.hidden) return;
+    setCurrentDate();
+    if (currentData) {
+      ensureDailyReset(currentData);
+      ensureWeeklyReset(currentData);
+      ensureKidChoresReset(currentData);
+      saveData(currentData);
+      renderChores(currentData);
+      renderKidChores(currentData);
+      renderTodos(currentData);
+    }
+  }
+
   function init() {
     setCurrentDate();
+    setInterval(setCurrentDate, 60000);
+    document.addEventListener('visibilitychange', refreshOnWake);
     loadInitialData(function (data) {
       currentData = normalizeData(data);
       ensureDailyReset(currentData);
