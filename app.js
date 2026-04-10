@@ -1,6 +1,7 @@
 'use strict';
 
 var STORAGE_KEY = 'strokeRehabExercises';
+var EXERCISES_VERSION = 2;
 var currentData = null;
 
 // ── Utility ──
@@ -33,7 +34,7 @@ var CATEGORIES = {
   'daily-movement': { name: 'Daily Movement', icon: '\uD83D\uDEB6', color: '#059669' }
 };
 
-var CATEGORY_ORDER = ['hand-arm', 'leg-balance', 'speech-cognitive', 'daily-movement'];
+var CATEGORY_ORDER = ['hand-arm', 'daily-movement', 'leg-balance', 'speech-cognitive'];
 
 // ── Default exercises ──
 
@@ -44,6 +45,13 @@ function defaultExercises() {
     { id: makeId(), text: 'Arm raises (10 reps)', done: false, category: 'hand-arm' },
     { id: makeId(), text: 'Grip strengthening (squeeze ball)', done: false, category: 'hand-arm' },
     { id: makeId(), text: 'Reach and grasp practice', done: false, category: 'hand-arm' },
+    { id: makeId(), text: 'Relax and open hand (morning)', done: false, category: 'hand-arm' },
+    { id: makeId(), text: 'Relax and open hand (midday)', done: false, category: 'hand-arm' },
+    { id: makeId(), text: 'Relax and open hand (evening)', done: false, category: 'hand-arm' },
+
+    { id: makeId(), text: 'Walk outside (20 minutes)', done: false, category: 'daily-movement' },
+    { id: makeId(), text: 'Stretching routine', done: false, category: 'daily-movement' },
+    { id: makeId(), text: 'Posture check-ins (3x today)', done: false, category: 'daily-movement' },
 
     { id: makeId(), text: 'Ankle pumps (15 reps)', done: false, category: 'leg-balance' },
     { id: makeId(), text: 'Seated marching (1 minute)', done: false, category: 'leg-balance' },
@@ -51,19 +59,16 @@ function defaultExercises() {
     { id: makeId(), text: 'Weight shifting (side to side)', done: false, category: 'leg-balance' },
     { id: makeId(), text: 'Standing balance (30 seconds)', done: false, category: 'leg-balance' },
 
-    { id: makeId(), text: 'Reading aloud (5 minutes)', done: false, category: 'speech-cognitive' },
+    { id: makeId(), text: 'Reading aloud (10 minutes)', done: false, category: 'speech-cognitive' },
     { id: makeId(), text: 'Word finding practice', done: false, category: 'speech-cognitive' },
     { id: makeId(), text: 'Counting exercises', done: false, category: 'speech-cognitive' },
-    { id: makeId(), text: 'Conversation practice', done: false, category: 'speech-cognitive' },
-
-    { id: makeId(), text: 'Guided walking (10 minutes)', done: false, category: 'daily-movement' },
-    { id: makeId(), text: 'Stretching routine', done: false, category: 'daily-movement' },
-    { id: makeId(), text: 'Posture check-ins (3x today)', done: false, category: 'daily-movement' }
+    { id: makeId(), text: 'Conversation practice', done: false, category: 'speech-cognitive' }
   ];
 }
 
 function defaultData() {
   return {
+    version: EXERCISES_VERSION,
     lastReset: todayDateString(),
     exercises: defaultExercises()
   };
@@ -78,7 +83,7 @@ function loadData() {
   }
   try {
     var parsed = JSON.parse(raw);
-    if (!parsed.exercises || !parsed.exercises.length) {
+    if (!parsed.exercises || !parsed.exercises.length || parsed.version !== EXERCISES_VERSION) {
       return defaultData();
     }
     return parsed;
