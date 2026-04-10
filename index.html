@@ -1,142 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Dashboard" />
-  <link rel="apple-touch-icon" href="icon.png" />
-  <title>Family Dashboard</title>
-  <link rel="stylesheet" href="styles.css?v=18" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Exercises">
+  <title>Daily Exercises</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="app">
-    <nav class="sidebar">
-      <button id="tab-todos" class="sidebar-item active" type="button">
-        <span class="sidebar-icon">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"></circle>
-            <path d="M8.5 12.5l2.5 2.5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-          </svg>
-        </span>
-        <span class="sidebar-label">To Do</span>
-      </button>
-      <button id="tab-chores" class="sidebar-item" type="button">
-        <span class="sidebar-icon">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M7 7h4M7 7V3m0 4a7 7 0 0 1 11.3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-            <path d="M17 17h-4m4 0v4m0-4a7 7 0 0 1-11.3-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-          </svg>
-        </span>
-        <span class="sidebar-label">Chores</span>
-      </button>
-      <button id="tab-kidchores" class="sidebar-item kid-tab" type="button">
-        <span class="sidebar-icon">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.7-5.2-2.7-5.2 2.7 1-5.7-4.2-4.1 5.8-.8z" fill="currentColor"></path>
-          </svg>
-        </span>
-        <span class="sidebar-label">Kids Chores</span>
-      </button>
-    </nav>
+    <header class="header">
+      <div class="header-top">
+        <h1 class="app-title">Daily Exercises</h1>
+        <div id="current-date" class="current-date"></div>
+      </div>
+      <div class="progress-section">
+        <div class="progress-track">
+          <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        <div id="progress-text" class="progress-text">0 / 0 done</div>
+      </div>
+    </header>
 
-    <div class="content">
-      <header class="top">
-        <div class="title">Family Dashboard</div>
-        <div class="header-right">
-          <div id="current-date" class="date"></div>
-          <div class="overflow-menu-wrap">
-            <button id="overflow-btn" class="overflow-btn" type="button">&#8942;</button>
-            <div id="overflow-menu" class="overflow-menu" style="display:none;">
-              <button id="delete-checked-btn" class="overflow-item danger" type="button">Delete checked items</button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <main class="content">
+      <div id="exercise-list" class="exercise-list"></div>
 
-      <main class="main-content">
-      <section id="view-chores" class="view">
-        <div class="section-head">
-          <div class="section-title">Chores</div>
-          <div class="section-sub">Daily + weekly lists</div>
-        </div>
-        <div id="chores-list" class="list"></div>
-        <div class="add-row">
-          <input id="chore-input" type="text" placeholder="Add a chore" />
-          <select id="chore-frequency">
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-          </select>
-          <button id="chore-add" class="primary" type="button">Add</button>
-        </div>
-      </section>
-
-      <section id="view-kidchores" class="view">
-        <div class="section-head">
-          <div class="section-title">Kids Chores</div>
-          <div class="section-sub">Kayden &amp; Oliver</div>
-        </div>
-        <div class="kid-content">
-          <div class="kid-section" data-kid="kayden">
-            <div class="kid-head">
-              <div class="kid-name">Kayden</div>
-              <span class="kid-badge kayden">Kayden</span>
-            </div>
-            <div class="kid-progress">
-              <div class="kid-progress-track">
-                <div id="kid-progress-bar-kayden" class="kid-progress-bar kayden"></div>
-              </div>
-              <div id="kid-progress-text-kayden" class="kid-progress-text"></div>
-            </div>
-            <div id="kid-list-kayden" class="list"></div>
-          </div>
-          <div class="kid-section" data-kid="oliver">
-            <div class="kid-head">
-              <div class="kid-name">Oliver</div>
-              <span class="kid-badge oliver">Oliver</span>
-            </div>
-            <div class="kid-progress">
-              <div class="kid-progress-track">
-                <div id="kid-progress-bar-oliver" class="kid-progress-bar oliver"></div>
-              </div>
-              <div id="kid-progress-text-oliver" class="kid-progress-text"></div>
-            </div>
-            <div id="kid-list-oliver" class="list"></div>
-          </div>
-        </div>
-        <div class="add-row kid-add-row">
-          <input id="kid-chore-input" type="text" placeholder="Add a kid chore" />
-          <select id="kid-chore-kid">
-            <option value="kayden">Kayden</option>
-            <option value="oliver">Oliver</option>
-          </select>
-          <button id="kid-chore-add" class="primary" type="button">Add</button>
-        </div>
-      </section>
-
-      <section id="view-todos" class="view active">
-        <div class="section-head">
-          <div class="section-title">To Do List</div>
-          <div class="section-sub">Organize by category</div>
-        </div>
-        <div id="todos-list" class="list"></div>
-        <div class="add-row">
-          <input id="todo-input" type="text" placeholder="Add a todo" />
-          <select id="todo-category">
-            <option>Home</option>
-            <option>Shopping</option>
-            <option>Projects</option>
-            <option>Rob</option>
-            <option>Other</option>
-          </select>
-          <button id="todo-add" class="primary" type="button">Add</button>
-        </div>
-      </section>
-      </main>
-    </div>
+      <div class="add-row">
+        <input type="text" id="exercise-input" class="add-input" placeholder="Add new exercise...">
+        <select id="exercise-category" class="add-select">
+          <option value="hand-arm">Hand &amp; Arm</option>
+          <option value="leg-balance">Leg &amp; Balance</option>
+          <option value="speech-cognitive">Speech &amp; Cognitive</option>
+          <option value="daily-movement">Daily Movement</option>
+        </select>
+        <button id="exercise-add" class="add-btn">Add</button>
+      </div>
+    </main>
   </div>
 
-  <script src="app.js?v=13"></script>
+  <script src="app.js"></script>
 </body>
 </html>
