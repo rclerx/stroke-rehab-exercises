@@ -1,7 +1,7 @@
 'use strict';
 
 var STORAGE_KEY = 'strokeRehabExercises';
-var EXERCISES_VERSION = 2;
+var EXERCISES_VERSION = 5;
 var currentData = null;
 
 // ── Utility ──
@@ -45,13 +45,10 @@ function defaultExercises() {
     { id: makeId(), text: 'Arm raises (10 reps)', done: false, category: 'hand-arm' },
     { id: makeId(), text: 'Grip strengthening (squeeze ball)', done: false, category: 'hand-arm' },
     { id: makeId(), text: 'Reach and grasp practice', done: false, category: 'hand-arm' },
-    { id: makeId(), text: 'Relax and open hand (morning)', done: false, category: 'hand-arm' },
-    { id: makeId(), text: 'Relax and open hand (midday)', done: false, category: 'hand-arm' },
-    { id: makeId(), text: 'Relax and open hand (evening)', done: false, category: 'hand-arm' },
+    { id: makeId(), text: 'Relax and open hand (3x daily)', done: false, category: 'hand-arm', reps: 3, completed: 0 },
 
     { id: makeId(), text: 'Walk outside (20 minutes)', done: false, category: 'daily-movement' },
     { id: makeId(), text: 'Stretching routine', done: false, category: 'daily-movement' },
-    { id: makeId(), text: 'Posture check-ins (3x today)', done: false, category: 'daily-movement' },
 
     { id: makeId(), text: 'Ankle pumps (15 reps)', done: false, category: 'leg-balance' },
     { id: makeId(), text: 'Seated marching (1 minute)', done: false, category: 'leg-balance' },
@@ -60,7 +57,7 @@ function defaultExercises() {
     { id: makeId(), text: 'Standing balance (30 seconds)', done: false, category: 'leg-balance' },
 
     { id: makeId(), text: 'Reading aloud (10 minutes)', done: false, category: 'speech-cognitive' },
-    { id: makeId(), text: 'Word finding practice', done: false, category: 'speech-cognitive' },
+    { id: makeId(), text: 'Aphasia Therapy app (10 min)', done: false, category: 'speech-cognitive' },
     { id: makeId(), text: 'Counting exercises', done: false, category: 'speech-cognitive' },
     { id: makeId(), text: 'Conversation practice', done: false, category: 'speech-cognitive' }
   ];
@@ -70,7 +67,8 @@ function defaultData() {
   return {
     version: EXERCISES_VERSION,
     lastReset: todayDateString(),
-    exercises: defaultExercises()
+    exercises: defaultExercises(),
+    history: []
   };
 }
 
@@ -84,8 +82,12 @@ function loadData() {
   try {
     var parsed = JSON.parse(raw);
     if (!parsed.exercises || !parsed.exercises.length || parsed.version !== EXERCISES_VERSION) {
-      return defaultData();
+      var fresh = defaultData();
+      // Preserve history across version upgrades
+      if (parsed.history) fresh.history = parsed.history;
+      return fresh;
     }
+    if (!parsed.history) parsed.history = [];
     return parsed;
   } catch (e) {
     return defaultData();
@@ -98,12 +100,51 @@ function saveData(data) {
 
 // ── Daily reset ──
 
+function saveSnapshot(data) {
+  if (!data.history) data.history = [];
+  // Only snapshot if at least one exercise was done
+  var anyDone = false;
+  var i;
+  for (i = 0; i < data.exercises.length; i++) {
+    var ex = data.exercises[i];
+    if (ex.done || (ex.reps && (ex.completed || 0) > 0)) {
+      anyDone = true;
+      break;
+    }
+  }
+  if (!anyDone) return;
+  var snapshot = {
+    date: data.lastReset,
+    exercises: []
+  };
+  for (i = 0; i < data.exercises.length; i++) {
+    var ex = data.exercises[i];
+    snapshot.exercises.push({
+      text: ex.text,
+      category: ex.category,
+      done: !!ex.done,
+      reps: ex.reps || 0,
+      completed: ex.completed || 0
+    });
+  }
+  // Keep max 90 days of history
+  data.history.unshift(snapshot);
+  if (data.history.length > 90) {
+    data.history = data.history.slice(0, 90);
+  }
+}
+
 function ensureDailyReset(data) {
   var today = todayDateString();
   if (!data.lastReset || data.lastReset < today) {
+    // Save yesterday's progress before resetting
+    saveSnapshot(data);
     var i;
     for (i = 0; i < data.exercises.length; i++) {
       data.exercises[i].done = false;
+      if (data.exercises[i].reps) {
+        data.exercises[i].completed = 0;
+      }
     }
     data.lastReset = today;
     saveData(data);
@@ -113,20 +154,33 @@ function ensureDailyReset(data) {
 // ── Stats ──
 
 function getStats(data) {
-  var total = data.exercises.length;
+  var total = 0;
   var done = 0;
   var i;
   for (i = 0; i < data.exercises.length; i++) {
-    if (data.exercises[i].done) {
-      done++;
+    var ex = data.exercises[i];
+    if (ex.reps) {
+      total += ex.reps;
+      done += ex.completed || 0;
+    } else {
+      total++;
+      if (ex.done) done++;
     }
   }
   return { total: total, done: done };
 }
 
 function isAllComplete(data) {
-  var stats = getStats(data);
-  return stats.total > 0 && stats.done === stats.total;
+  var i;
+  for (i = 0; i < data.exercises.length; i++) {
+    var ex = data.exercises[i];
+    if (ex.reps) {
+      if ((ex.completed || 0) < ex.reps) return false;
+    } else {
+      if (!ex.done) return false;
+    }
+  }
+  return data.exercises.length > 0;
 }
 
 // ── Progress UI ──
@@ -261,65 +315,148 @@ function triggerCelebration() {
 
 function renderExerciseItem(data, item) {
   var catMeta = CATEGORIES[item.category] || CATEGORIES['daily-movement'];
+  var isRep = !!item.reps;
   var row = document.createElement('div');
-  row.className = item.done ? 'item is-done' : 'item';
+  var isDone = isRep ? (item.completed || 0) >= item.reps : item.done;
+  row.className = isDone ? 'item is-done' : 'item';
   row.setAttribute('data-id', item.id);
+  row.style.setProperty('--cat-color', catMeta.color);
 
   var left = document.createElement('div');
   left.className = 'item-left';
 
-  var checkboxWrap = document.createElement('label');
-  checkboxWrap.className = 'checkbox-wrap';
-  var checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.className = 'checkbox-input';
-  checkbox.checked = item.done;
-  var checkboxUi = document.createElement('span');
-  checkboxUi.className = 'checkbox-ui';
-  checkboxWrap.appendChild(checkbox);
-  checkboxWrap.appendChild(checkboxUi);
+  if (isRep) {
+    // Rep counter button
+    var counterBtn = document.createElement('button');
+    counterBtn.className = 'rep-counter';
+    var completed = item.completed || 0;
+    counterBtn.setAttribute('data-completed', completed);
+    counterBtn.setAttribute('data-reps', item.reps);
+    counterBtn.textContent = completed + '/' + item.reps;
+    updateRepCounterStyle(counterBtn, completed, item.reps, catMeta.color);
 
-  var title = document.createElement('div');
-  title.className = 'item-title';
-  title.textContent = item.text;
+    var title = document.createElement('div');
+    title.className = 'item-title';
+    title.textContent = item.text;
 
-  left.appendChild(checkboxWrap);
-  left.appendChild(title);
-  row.appendChild(left);
+    left.appendChild(counterBtn);
+    left.appendChild(title);
+    row.appendChild(left);
 
-  checkbox.onclick = function () {
-    var wasAllComplete = isAllComplete(data);
-    item.done = checkbox.checked;
-    row.className = item.done ? 'item is-done' : 'item';
-    saveData(data);
-    if (item.done) {
-      triggerConfettiBurst(checkboxUi, catMeta.color);
-    }
-    updateProgressUI(data);
-    // Update category badge count
-    renderCategoryBadge(data, item.category);
-    if (item.done && !wasAllComplete && isAllComplete(data)) {
-      triggerCelebration();
-    }
-  };
+    counterBtn.onclick = function () {
+      var wasAllComplete = isAllComplete(data);
+      var c = item.completed || 0;
+      if (c >= item.reps) {
+        // Reset on tap after full
+        item.completed = 0;
+        item.done = false;
+      } else {
+        item.completed = c + 1;
+        item.done = item.completed >= item.reps;
+      }
+      counterBtn.textContent = item.completed + '/' + item.reps;
+      counterBtn.setAttribute('data-completed', item.completed);
+      updateRepCounterStyle(counterBtn, item.completed, item.reps, catMeta.color);
+      row.className = item.done ? 'item is-done' : 'item';
+      saveData(data);
+      if (item.completed > 0 && item.completed <= item.reps) {
+        triggerConfettiBurst(counterBtn, catMeta.color);
+      }
+      updateProgressUI(data);
+      renderCategoryBadge(data, item.category);
+      if (item.done && !wasAllComplete && isAllComplete(data)) {
+        triggerCelebration();
+      }
+    };
+  } else {
+    // Standard checkbox
+    var checkboxWrap = document.createElement('label');
+    checkboxWrap.className = 'checkbox-wrap';
+    var checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'checkbox-input';
+    checkbox.checked = item.done;
+    var checkboxUi = document.createElement('span');
+    checkboxUi.className = 'checkbox-ui';
+    checkboxWrap.appendChild(checkbox);
+    checkboxWrap.appendChild(checkboxUi);
+
+    var title = document.createElement('div');
+    title.className = 'item-title';
+    title.textContent = item.text;
+
+    left.appendChild(checkboxWrap);
+    left.appendChild(title);
+    row.appendChild(left);
+
+    checkbox.onclick = function () {
+      var wasAllComplete = isAllComplete(data);
+      item.done = checkbox.checked;
+      row.className = item.done ? 'item is-done' : 'item';
+      saveData(data);
+      if (item.done) {
+        triggerConfettiBurst(checkboxUi, catMeta.color);
+      }
+      updateProgressUI(data);
+      renderCategoryBadge(data, item.category);
+      if (item.done && !wasAllComplete && isAllComplete(data)) {
+        triggerCelebration();
+      }
+    };
+  }
 
   return row;
+}
+
+function updateRepCounterStyle(btn, completed, reps, catColor) {
+  if (completed === 0) {
+    btn.style.background = '#f1f5f9';
+    btn.style.color = '#64748b';
+    btn.style.borderColor = '#cbd5e1';
+  } else if (completed < reps) {
+    var opacity = 0.15 + (completed / reps) * 0.45;
+    btn.style.background = catColor + hexOpacity(opacity);
+    btn.style.color = catColor;
+    btn.style.borderColor = catColor;
+  } else {
+    btn.style.background = catColor;
+    btn.style.color = '#ffffff';
+    btn.style.borderColor = catColor;
+  }
+}
+
+function hexOpacity(opacity) {
+  var val = Math.round(opacity * 255);
+  var hex = val.toString(16);
+  return hex.length < 2 ? '0' + hex : hex;
+}
+
+function getCategoryStats(data, catKey) {
+  var done = 0;
+  var total = 0;
+  var i;
+  for (i = 0; i < data.exercises.length; i++) {
+    var ex = data.exercises[i];
+    if (ex.category === catKey) {
+      if (ex.reps) {
+        total += ex.reps;
+        done += ex.completed || 0;
+      } else {
+        total++;
+        if (ex.done) done++;
+      }
+    }
+  }
+  return { done: done, total: total };
 }
 
 function renderCategoryBadge(data, catKey) {
   var badges = document.querySelectorAll('.category-badge.' + catKey);
   if (!badges.length) return;
-  var done = 0;
-  var total = 0;
+  var stats = getCategoryStats(data, catKey);
   var i;
-  for (i = 0; i < data.exercises.length; i++) {
-    if (data.exercises[i].category === catKey) {
-      total++;
-      if (data.exercises[i].done) done++;
-    }
-  }
   for (i = 0; i < badges.length; i++) {
-    badges[i].textContent = done + '/' + total;
+    badges[i].textContent = stats.done + '/' + stats.total;
   }
 }
 
@@ -356,11 +493,8 @@ function renderExercises(data) {
 
     var badge = document.createElement('span');
     badge.className = 'category-badge ' + catKey;
-    var catDone = 0;
-    for (j = 0; j < items.length; j++) {
-      if (items[j].done) catDone++;
-    }
-    badge.textContent = catDone + '/' + items.length;
+    var catStats = getCategoryStats(data, catKey);
+    badge.textContent = catStats.done + '/' + catStats.total;
 
     head.appendChild(icon);
     head.appendChild(name);
@@ -389,6 +523,9 @@ function setCurrentDate() {
 // ── Events ──
 
 function bindEvents() {
+  document.getElementById('tab-exercises').onclick = function () { switchTab('exercises'); };
+  document.getElementById('tab-history').onclick = function () { switchTab('history'); };
+
   var addBtn = document.getElementById('exercise-add');
   var addInput = document.getElementById('exercise-input');
   var addCategory = document.getElementById('exercise-category');
@@ -413,6 +550,127 @@ function bindEvents() {
       addBtn.onclick();
     }
   };
+}
+
+// ── Tabs ──
+
+function switchTab(tabName) {
+  var tabExercises = document.getElementById('tab-exercises');
+  var tabHistory = document.getElementById('tab-history');
+  var viewExercises = document.getElementById('view-exercises');
+  var viewHistory = document.getElementById('view-history');
+
+  if (tabName === 'history') {
+    tabExercises.className = 'tab';
+    tabHistory.className = 'tab active';
+    viewExercises.className = 'view';
+    viewHistory.className = 'view active';
+    renderHistory(currentData);
+  } else {
+    tabExercises.className = 'tab active';
+    tabHistory.className = 'tab';
+    viewExercises.className = 'view active';
+    viewHistory.className = 'view';
+  }
+}
+
+// ── History ──
+
+function formatHistoryDate(dateStr) {
+  var parts = dateStr.split('-');
+  var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate();
+}
+
+function renderHistory(data) {
+  var list = document.getElementById('history-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  var history = data.history || [];
+  if (history.length === 0) {
+    var empty = document.createElement('div');
+    empty.className = 'history-empty';
+    empty.textContent = 'No history yet. Completed exercises will appear here tomorrow.';
+    list.appendChild(empty);
+    return;
+  }
+
+  var i, j;
+  for (i = 0; i < history.length; i++) {
+    var day = history[i];
+    var total = 0;
+    var done = 0;
+    for (j = 0; j < day.exercises.length; j++) {
+      var ex = day.exercises[j];
+      if (ex.reps) {
+        total += ex.reps;
+        done += ex.completed || 0;
+      } else {
+        total++;
+        if (ex.done) done++;
+      }
+    }
+
+    var card = document.createElement('div');
+    card.className = 'history-day';
+
+    var head = document.createElement('div');
+    head.className = 'history-day-head';
+
+    var dateEl = document.createElement('div');
+    dateEl.className = 'history-day-date';
+    dateEl.textContent = formatHistoryDate(day.date);
+
+    var statsEl = document.createElement('div');
+    statsEl.className = 'history-day-stats' + (done === total ? ' complete' : '');
+    statsEl.textContent = done + '/' + total;
+
+    head.appendChild(dateEl);
+    head.appendChild(statsEl);
+    card.appendChild(head);
+
+    var details = document.createElement('div');
+    details.className = 'history-day-details';
+
+    for (j = 0; j < day.exercises.length; j++) {
+      var ex = day.exercises[j];
+      var exDone = ex.reps ? (ex.completed || 0) >= ex.reps : ex.done;
+      var row = document.createElement('div');
+      row.className = 'history-exercise' + (exDone ? '' : ' missed');
+
+      var check = document.createElement('span');
+      check.className = 'history-check';
+      if (ex.reps) {
+        check.textContent = (ex.completed || 0) + '/' + ex.reps;
+      } else {
+        check.textContent = exDone ? '\u2705' : '\u2B1C';
+      }
+
+      var text = document.createElement('span');
+      text.className = 'history-exercise-text';
+      text.textContent = ex.text;
+
+      row.appendChild(check);
+      row.appendChild(text);
+      details.appendChild(row);
+    }
+
+    card.appendChild(details);
+    list.appendChild(card);
+
+    // Toggle expand on tap
+    (function (cardEl) {
+      cardEl.querySelector('.history-day-head').onclick = function () {
+        cardEl.className = cardEl.className.indexOf('expanded') >= 0
+          ? 'history-day'
+          : 'history-day expanded';
+      };
+    })(card);
+  }
 }
 
 // ── Wake/visibility ──

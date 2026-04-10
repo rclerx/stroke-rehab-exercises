@@ -22,20 +22,30 @@
         </div>
         <div id="progress-text" class="progress-text">0 / 0 done</div>
       </div>
+      <nav class="tab-bar">
+        <button id="tab-exercises" class="tab active" type="button">Today</button>
+        <button id="tab-history" class="tab" type="button">History</button>
+      </nav>
     </header>
 
     <main class="content">
-      <div id="exercise-list" class="exercise-list"></div>
+      <div id="view-exercises" class="view active">
+        <div id="exercise-list" class="exercise-list"></div>
 
-      <div class="add-row">
-        <input type="text" id="exercise-input" class="add-input" placeholder="Add new exercise...">
-        <select id="exercise-category" class="add-select">
-          <option value="hand-arm">Hand &amp; Arm</option>
-          <option value="daily-movement">Daily Movement</option>
-          <option value="leg-balance">Leg &amp; Balance</option>
-          <option value="speech-cognitive">Speech &amp; Cognitive</option>
-        </select>
-        <button id="exercise-add" class="add-btn">Add</button>
+        <div class="add-row">
+          <input type="text" id="exercise-input" class="add-input" placeholder="Add new exercise...">
+          <select id="exercise-category" class="add-select">
+            <option value="hand-arm">Hand &amp; Arm</option>
+            <option value="daily-movement">Daily Movement</option>
+            <option value="leg-balance">Leg &amp; Balance</option>
+            <option value="speech-cognitive">Speech &amp; Cognitive</option>
+          </select>
+          <button id="exercise-add" class="add-btn">Add</button>
+        </div>
+      </div>
+
+      <div id="view-history" class="view">
+        <div id="history-list" class="history-list"></div>
       </div>
     </main>
   </div>
