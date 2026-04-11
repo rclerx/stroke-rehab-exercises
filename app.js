@@ -690,6 +690,10 @@ function init() {
   setInterval(setCurrentDate, 60000);
   document.addEventListener('visibilitychange', refreshOnWake);
 
+  // Prevent iOS long-press text selection and context menu
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  document.addEventListener('touchstart', function () {}, { passive: true });
+
   currentData = loadData();
   ensureDailyReset(currentData);
   bindEvents();
