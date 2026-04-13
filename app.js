@@ -1,7 +1,7 @@
 'use strict';
 
 var STORAGE_KEY = 'strokeRehabExercises';
-var EXERCISES_VERSION = 5;
+var EXERCISES_VERSION = 6;
 var currentData = null;
 
 // ── Utility ──
@@ -40,26 +40,17 @@ var CATEGORY_ORDER = ['hand-arm', 'daily-movement', 'leg-balance', 'speech-cogni
 
 function defaultExercises() {
   return [
-    { id: makeId(), text: 'Finger stretches (open & close)', done: false, category: 'hand-arm' },
-    { id: makeId(), text: 'Wrist rotations (10 each way)', done: false, category: 'hand-arm' },
-    { id: makeId(), text: 'Arm raises (10 reps)', done: false, category: 'hand-arm' },
-    { id: makeId(), text: 'Grip strengthening (squeeze ball)', done: false, category: 'hand-arm' },
-    { id: makeId(), text: 'Reach and grasp practice', done: false, category: 'hand-arm' },
-    { id: makeId(), text: 'Relax and open hand (3x daily)', done: false, category: 'hand-arm', reps: 3, completed: 0 },
+    { id: makeId(), text: 'Relax & Open Hand (3x daily)', done: false, category: 'hand-arm', reps: 3, completed: 0 },
+    { id: makeId(), text: 'Grip Strengthening (squeeze ball)', done: false, category: 'hand-arm' },
+    { id: makeId(), text: 'Range of Motion Exercises', done: false, category: 'hand-arm' },
+    { id: makeId(), text: 'Twin Stim (10 min)', done: false, category: 'hand-arm' },
 
-    { id: makeId(), text: 'Walk outside (20 minutes)', done: false, category: 'daily-movement' },
-    { id: makeId(), text: 'Stretching routine', done: false, category: 'daily-movement' },
+    { id: makeId(), text: 'Walk Outside (20 min)', done: false, category: 'daily-movement' },
+    { id: makeId(), text: 'Stretching Routine (Arms & Legs)', done: false, category: 'daily-movement' },
 
-    { id: makeId(), text: 'Ankle pumps (15 reps)', done: false, category: 'leg-balance' },
-    { id: makeId(), text: 'Seated marching (1 minute)', done: false, category: 'leg-balance' },
-    { id: makeId(), text: 'Heel raises (10 reps)', done: false, category: 'leg-balance' },
-    { id: makeId(), text: 'Weight shifting (side to side)', done: false, category: 'leg-balance' },
-    { id: makeId(), text: 'Standing balance (30 seconds)', done: false, category: 'leg-balance' },
-
-    { id: makeId(), text: 'Reading aloud (10 minutes)', done: false, category: 'speech-cognitive' },
-    { id: makeId(), text: 'Aphasia Therapy app (10 min)', done: false, category: 'speech-cognitive' },
-    { id: makeId(), text: 'Counting exercises', done: false, category: 'speech-cognitive' },
-    { id: makeId(), text: 'Conversation practice', done: false, category: 'speech-cognitive' }
+    { id: makeId(), text: 'Reading Aloud (10 min)', done: false, category: 'speech-cognitive' },
+    { id: makeId(), text: 'Aphasia Therapy App (20 min)', done: false, category: 'speech-cognitive' },
+    { id: makeId(), text: 'Conversation Practice', done: false, category: 'speech-cognitive' }
   ];
 }
 
