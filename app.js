@@ -1,7 +1,7 @@
 'use strict';
 
 var STORAGE_KEY = 'strokeRehabExercises';
-var EXERCISES_VERSION = 6;
+var EXERCISES_VERSION = 7;
 var currentData = null;
 
 // ── Utility ──
@@ -44,6 +44,8 @@ function defaultExercises() {
     { id: makeId(), text: 'Grip Strengthening (squeeze ball)', done: false, category: 'hand-arm' },
     { id: makeId(), text: 'Range of Motion Exercises', done: false, category: 'hand-arm' },
     { id: makeId(), text: 'Twin Stim (10 min)', done: false, category: 'hand-arm' },
+
+    { id: makeId(), text: 'Standing Balance (1 min)', done: false, category: 'leg-balance' },
 
     { id: makeId(), text: 'Walk Outside (20 min)', done: false, category: 'daily-movement' },
     { id: makeId(), text: 'Stretching Routine (Arms & Legs)', done: false, category: 'daily-movement' },
