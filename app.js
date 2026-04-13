@@ -867,6 +867,7 @@ function initDragAndDrop() {
     if (!handle) return;
     var row = closestWithClass(handle, 'item');
     if (!row) return;
+    e.preventDefault();
     var touch = e.touches[0];
     dragState = { pending: true, row: row, startX: touch.clientX, startY: touch.clientY };
     if (dragPressTimer) clearTimeout(dragPressTimer);
@@ -875,8 +876,8 @@ function initDragAndDrop() {
         dragState.pending = false;
         beginDrag(row, touch);
       }
-    }, 200);
-  }, false);
+    }, 150);
+  }, { passive: false });
 
   document.addEventListener('touchmove', function (e) {
     if (!dragState) return;
