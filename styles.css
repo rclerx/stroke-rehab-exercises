@@ -283,6 +283,48 @@ html, body {
   line-height: 1.3;
 }
 
+/* Drag handle */
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 24px;
+  color: #cbd5e1;
+  opacity: 0.6;
+  -webkit-user-select: none;
+  user-select: none;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  cursor: grab;
+}
+
+.drag-handle:active {
+  opacity: 1;
+}
+
+.dragging-hidden {
+  visibility: hidden;
+}
+
+.drag-ghost {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+  opacity: 0.9;
+  transform: scale(1.02);
+  pointer-events: none;
+}
+
+.drag-placeholder {
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  margin: 2px 0;
+  background: rgba(8, 145, 178, 0.05);
+}
+
 /* Delete button */
 .delete-btn {
   flex: 0 0 auto;

@@ -405,6 +405,12 @@ function renderExerciseItem(data, item) {
     };
   }
 
+  // Drag handle
+  var handle = document.createElement('span');
+  handle.className = 'drag-handle';
+  handle.textContent = '\u2261';
+  row.appendChild(handle);
+
   // Delete button with confirm
   var deleteBtn = document.createElement('button');
   deleteBtn.className = 'delete-btn';
@@ -530,9 +536,13 @@ function renderExercises(data) {
     head.appendChild(badge);
     section.appendChild(head);
 
+    var itemContainer = document.createElement('div');
+    itemContainer.className = 'drag-container';
+    itemContainer.setAttribute('data-category', catKey);
     for (j = 0; j < items.length; j++) {
-      section.appendChild(renderExerciseItem(data, items[j]));
+      itemContainer.appendChild(renderExerciseItem(data, items[j]));
     }
+    section.appendChild(itemContainer);
 
     list.appendChild(section);
   }
@@ -712,6 +722,205 @@ function refreshOnWake() {
   }
 }
 
+// ── Drag and drop ──
+
+var dragState = null;
+var dragPressTimer = null;
+
+function closestWithClass(node, className) {
+  var current = node;
+  while (current) {
+    if (current.className && (' ' + current.className + ' ').indexOf(' ' + className + ' ') > -1) {
+      return current;
+    }
+    current = current.parentNode;
+  }
+  return null;
+}
+
+function beginDrag(row, touch) {
+  if (!row || !currentData) return;
+  var container = closestWithClass(row, 'drag-container');
+  if (!container) return;
+  var rect = row.getBoundingClientRect();
+
+  var placeholder = document.createElement('div');
+  placeholder.className = 'drag-placeholder';
+  placeholder.style.height = rect.height + 'px';
+  if (row.nextSibling) {
+    row.parentNode.insertBefore(placeholder, row.nextSibling);
+  } else {
+    row.parentNode.appendChild(placeholder);
+  }
+
+  var ghost = row.cloneNode(true);
+  ghost.className += ' drag-ghost';
+  ghost.style.position = 'fixed';
+  ghost.style.left = rect.left + 'px';
+  ghost.style.top = rect.top + 'px';
+  ghost.style.width = rect.width + 'px';
+  ghost.style.height = rect.height + 'px';
+  ghost.style.zIndex = '1000';
+  document.body.appendChild(ghost);
+
+  row.className += ' dragging-hidden';
+
+  dragState = {
+    active: true,
+    row: row,
+    ghost: ghost,
+    placeholder: placeholder,
+    container: container,
+    offsetX: touch.clientX - rect.left,
+    offsetY: touch.clientY - rect.top
+  };
+}
+
+function updateDragPosition(touch) {
+  if (!dragState || !dragState.active) return;
+  dragState.ghost.style.left = (touch.clientX - dragState.offsetX) + 'px';
+  dragState.ghost.style.top = (touch.clientY - dragState.offsetY) + 'px';
+
+  var target = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!target) return;
+
+  var targetItem = closestWithClass(target, 'item');
+  if (!targetItem || targetItem === dragState.row || targetItem.parentNode !== dragState.container) return;
+
+  var rect = targetItem.getBoundingClientRect();
+  if (touch.clientY < rect.top + rect.height / 2) {
+    dragState.container.insertBefore(dragState.placeholder, targetItem);
+  } else {
+    if (targetItem.nextSibling) {
+      dragState.container.insertBefore(dragState.placeholder, targetItem.nextSibling);
+    } else {
+      dragState.container.appendChild(dragState.placeholder);
+    }
+  }
+}
+
+function finishDrag() {
+  if (!dragState || !dragState.active) {
+    dragState = null;
+    return;
+  }
+
+  if (dragState.placeholder.parentNode) {
+    dragState.placeholder.parentNode.insertBefore(dragState.row, dragState.placeholder);
+    dragState.placeholder.parentNode.removeChild(dragState.placeholder);
+  }
+  if (dragState.ghost && dragState.ghost.parentNode) {
+    dragState.ghost.parentNode.removeChild(dragState.ghost);
+  }
+  dragState.row.className = dragState.row.className.replace(' dragging-hidden', '');
+
+  // Read new order from DOM and reorder data
+  var container = dragState.container;
+  var catKey = container.getAttribute('data-category');
+  var children = container.children;
+  var orderedIds = [];
+  var i;
+  for (i = 0; i < children.length; i++) {
+    if (children[i].getAttribute('data-id')) {
+      orderedIds.push(children[i].getAttribute('data-id'));
+    }
+  }
+
+  // Reorder exercises in this category
+  var catItems = [];
+  var otherItems = [];
+  for (i = 0; i < currentData.exercises.length; i++) {
+    if (currentData.exercises[i].category === catKey) {
+      catItems.push(currentData.exercises[i]);
+    }
+  }
+  var idMap = {};
+  for (i = 0; i < catItems.length; i++) {
+    idMap[catItems[i].id] = catItems[i];
+  }
+  var reordered = [];
+  for (i = 0; i < orderedIds.length; i++) {
+    if (idMap[orderedIds[i]]) {
+      reordered.push(idMap[orderedIds[i]]);
+    }
+  }
+  // Rebuild exercises array preserving category order
+  var newExercises = [];
+  var catIndex = 0;
+  for (i = 0; i < currentData.exercises.length; i++) {
+    if (currentData.exercises[i].category === catKey) {
+      newExercises.push(reordered[catIndex] || currentData.exercises[i]);
+      catIndex++;
+    } else {
+      newExercises.push(currentData.exercises[i]);
+    }
+  }
+  currentData.exercises = newExercises;
+  saveData(currentData);
+  dragState = null;
+}
+
+function initDragAndDrop() {
+  document.addEventListener('touchstart', function (e) {
+    if (!e.touches || e.touches.length !== 1) return;
+    var handle = closestWithClass(e.target, 'drag-handle');
+    if (!handle) return;
+    var row = closestWithClass(handle, 'item');
+    if (!row) return;
+    var touch = e.touches[0];
+    dragState = { pending: true, row: row, startX: touch.clientX, startY: touch.clientY };
+    if (dragPressTimer) clearTimeout(dragPressTimer);
+    dragPressTimer = setTimeout(function () {
+      if (dragState && dragState.pending) {
+        dragState.pending = false;
+        beginDrag(row, touch);
+      }
+    }, 200);
+  }, false);
+
+  document.addEventListener('touchmove', function (e) {
+    if (!dragState) return;
+    if (dragState.pending) {
+      var touch = e.touches[0];
+      var dx = Math.abs(touch.clientX - dragState.startX);
+      var dy = Math.abs(touch.clientY - dragState.startY);
+      if (dx > 6 || dy > 6) {
+        clearTimeout(dragPressTimer);
+        dragState = null;
+      } else {
+        e.preventDefault();
+      }
+      return;
+    }
+    if (dragState.active) {
+      e.preventDefault();
+      updateDragPosition(e.touches[0]);
+    }
+  }, { passive: false });
+
+  document.addEventListener('touchend', function () {
+    if (dragState && dragState.pending) {
+      clearTimeout(dragPressTimer);
+      dragState = null;
+      return;
+    }
+    if (dragState && dragState.active) {
+      finishDrag();
+    }
+  }, false);
+
+  document.addEventListener('touchcancel', function () {
+    if (dragState && dragState.pending) {
+      clearTimeout(dragPressTimer);
+      dragState = null;
+      return;
+    }
+    if (dragState && dragState.active) {
+      finishDrag();
+    }
+  }, false);
+}
+
 // ── Init ──
 
 function init() {
@@ -726,6 +935,7 @@ function init() {
   currentData = loadData();
   ensureDailyReset(currentData);
   bindEvents();
+  initDragAndDrop();
   renderExercises(currentData);
 }
 
