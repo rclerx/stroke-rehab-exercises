@@ -405,6 +405,35 @@ function renderExerciseItem(data, item) {
     };
   }
 
+  // Delete button with confirm
+  var deleteBtn = document.createElement('button');
+  deleteBtn.className = 'delete-btn';
+  deleteBtn.textContent = '\u00D7';
+  var confirmTimer = null;
+  deleteBtn.onclick = function () {
+    if (deleteBtn.className.indexOf('confirming') >= 0) {
+      // Confirmed — remove the exercise
+      var idx = -1;
+      for (var k = 0; k < data.exercises.length; k++) {
+        if (data.exercises[k].id === item.id) { idx = k; break; }
+      }
+      if (idx >= 0) {
+        data.exercises.splice(idx, 1);
+        saveData(data);
+        renderExercises(data);
+      }
+    } else {
+      // First tap — enter confirm state
+      deleteBtn.className = 'delete-btn confirming';
+      deleteBtn.textContent = 'Delete?';
+      confirmTimer = setTimeout(function () {
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = '\u00D7';
+      }, 3000);
+    }
+  };
+  row.appendChild(deleteBtn);
+
   return row;
 }
 
